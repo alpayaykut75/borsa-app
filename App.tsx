@@ -11,7 +11,7 @@ import AnimatedSplash from './components/AnimatedSplash';
 import HomeScreen from './screens/HomeScreen';
 import LessonScreen from './screens/LessonScreen';
 import UnitDetailScreen from './screens/UnitDetailScreen';
-import AIAssistantScreen from './screens/AIAssistantScreen';
+import AIScreen from './src/screens/AIScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import CompletionScreen from './screens/CompletionScreen';
 
@@ -86,7 +86,7 @@ function MainTabs() {
       />
       <Tab.Screen
         name="Assistant"
-        component={AIAssistantScreen}
+        component={AIScreen}
         options={{
           tabBarLabel: 'Asistan',
           tabBarIcon: ({ color, size }) => (
