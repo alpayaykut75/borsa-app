@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Audio } from 'expo-av';
+import { Paths, File } from 'expo-file-system';
 import Markdown from 'react-native-markdown-display';
 // @ts-expect-error - @expo/vector-icons type declarations may be missing
 import { Ionicons } from '@expo/vector-icons';
@@ -166,6 +167,21 @@ export default function LessonScreen({ route, navigation }: Props) {
     setLoading(false);
   }, [lessonId]);
 
+  // Audio mode setup: iOS sessiz modda bile çalması için
+  useEffect(() => {
+    const setupAudioMode = async () => {
+      try {
+        await Audio.setAudioModeAsync({
+          playsInSilentModeIOS: true,
+          staysActiveInBackground: false,
+        });
+      } catch (error) {
+        console.log('Audio mode setup error:', error);
+      }
+    };
+    setupAudioMode();
+  }, []);
+
   // Audio cleanup: Sayfadan çıkınca veya adım değişince sesi durdur
   useEffect(() => {
     return () => {
@@ -182,7 +198,7 @@ export default function LessonScreen({ route, navigation }: Props) {
         try {
           await audioState.sound.stopAsync();
           await audioState.sound.unloadAsync();
-          setAudioState({ sound: null, isPlaying: false, isLoading: false });
+          setAudioState({ sound: null, isPlaying: false, isLoading: false, position: 0, duration: 0 });
         } catch (error) {
           // Ignore errors
         }
@@ -487,39 +503,67 @@ export default function LessonScreen({ route, navigation }: Props) {
         // Yeni ses yükle ve oynat
         setAudioState((prev) => ({ ...prev, isLoading: true }));
 
-        // Debug log for audio URL
         console.log('MOONO AUDIO DEBUG - OKUNAN URL:', audioUrl);
 
-        const { sound } = await Audio.Sound.createAsync(
-          { uri: audioUrl },
-          { shouldPlay: true }
-        );
-        
-        // Ses durumunu güncelle
-        sound.setOnPlaybackStatusUpdate((status) => {
-          if (status.isLoaded) {
-            setAudioState((prev) => ({
-              ...prev,
-              position: status.positionMillis || 0,
-              duration: status.durationMillis || 0,
-              isPlaying: status.isPlaying || false,
-            }));
-            
-            if (status.didJustFinish) {
-              setAudioState((prev) => ({ ...prev, isPlaying: false, position: 0 }));
-            }
-          }
-        });
+        // Dosyayı önce indir, sonra oynat (iOS streaming sorunları için)
+        try {
+          // Dosya adını URL'den oluştur (benzersiz cache key için)
+          const filename = audioUrl.split('/').pop() || `audio_${Date.now()}.mp3`;
+          const destinationFile = new File(Paths.cache, filename);
 
-        setAudioState({ 
-          sound, 
-          isPlaying: true, 
-          isLoading: false,
-          position: 0,
-          duration: 0,
-        });
+          let fileUriToPlay: string;
+
+          // Dosyanın cache'de olup olmadığını kontrol et
+          if (destinationFile.exists) {
+            // Dosya zaten var, doğrudan kullan
+            console.log('MOONO AUDIO DEBUG - DOSYA HAFIZADA MEVCUT, TEKRAR İNDİRMİYOR:', destinationFile.uri);
+            fileUriToPlay = destinationFile.uri;
+          } else {
+            // Dosya yok, indir
+            console.log('MOONO AUDIO DEBUG - İNDİRME BAŞLIYOR:', destinationFile.uri);
+            const downloadedFile = await File.downloadFileAsync(audioUrl, destinationFile);
+            console.log('MOONO AUDIO DEBUG - İNDİRME TAMAMLANDI:', downloadedFile.uri);
+            fileUriToPlay = downloadedFile.uri;
+          }
+
+          // Dosyayı oynat
+          const { sound } = await Audio.Sound.createAsync(
+            { uri: fileUriToPlay },
+            { shouldPlay: true }
+          );
+          
+          console.log('MOONO AUDIO DEBUG - SES YÜKLENDI VE OYNATILIYOR');
+
+          // Ses durumunu güncelle
+          sound.setOnPlaybackStatusUpdate((status) => {
+            if (status.isLoaded) {
+              setAudioState((prev) => ({
+                ...prev,
+                position: status.positionMillis || 0,
+                duration: status.durationMillis || 0,
+                isPlaying: status.isPlaying || false,
+              }));
+              
+              if (status.didJustFinish) {
+                setAudioState((prev) => ({ ...prev, isPlaying: false, position: 0 }));
+              }
+            }
+          });
+
+          setAudioState({ 
+            sound, 
+            isPlaying: true, 
+            isLoading: false,
+            position: 0,
+            duration: 0,
+          });
+        } catch (downloadError) {
+          console.log('MOONO AUDIO DEBUG - İNDİRME/YÜKLEME HATASI:', downloadError);
+          throw downloadError;
+        }
       }
     } catch (error) {
+      console.log('MOONO AUDIO DEBUG - SES ÇALMA HATASI (GENEL):', error);
       setAudioState((prev) => ({ ...prev, isLoading: false }));
       Alert.alert('Hata', 'Ses oynatılamadı. Lütfen tekrar deneyin.');
     }
