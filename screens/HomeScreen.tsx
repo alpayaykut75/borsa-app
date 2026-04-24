@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  Image,
   SafeAreaView,
   StyleSheet,
   Text,
@@ -13,8 +14,6 @@ import { useNavigation } from '@react-navigation/native';
 import { CompositeNavigationProp } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-// @ts-expect-error - @expo/vector-icons type declarations may be missing
-import { Ionicons } from '@expo/vector-icons';
 
 import { supabase } from '../lib/supabase';
 import type { MainTabParamList, HomeStackParamList } from '../App';
@@ -189,7 +188,7 @@ export default function HomeScreen() {
       <View style={styles.container}>
         <View style={styles.header}>
           <View style={styles.avatarContainer}>
-            <Text style={styles.avatarEmoji}>🙂</Text>
+            <Image source={require('../assets/profile-avatar.png')} style={styles.avatarImage} />
           </View>
           <View style={styles.headerTextContainer}>
             <Text style={styles.headerGreeting}>Hoş geldin Ortak</Text>
@@ -223,14 +222,13 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
+    overflow: 'hidden',
     borderWidth: 1,
     borderColor: palette.accent,
   },
-  avatarEmoji: {
-    fontSize: 34,
-    lineHeight: 38,
+  avatarImage: {
+    width: '100%',
+    height: '100%',
   },
   headerTextContainer: {
     flex: 1,

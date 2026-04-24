@@ -86,7 +86,11 @@ export default function AIScreen() {
       >
         <View style={styles.header}>
           <View style={styles.avatarContainer}>
-            <Image source={require('../../assets/moono_bull.png')} style={styles.avatar} />
+            <Image
+              source={require('../../assets/moono-profile.png')}
+              style={styles.avatar}
+              resizeMode="cover"
+            />
           </View>
           <View>
             <Text style={styles.headerTitle}>Moono</Text>
@@ -153,6 +157,7 @@ const styles = StyleSheet.create({
   avatar: {
     width: '100%',
     height: '100%',
+    transform: [{ scale: 1.28 }, { translateY: 3 }],
   },
   headerTitle: {
     color: 'white',

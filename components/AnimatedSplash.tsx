@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Image, StyleSheet, Text, View } from 'react-native';
-import { Audio } from 'expo-av';
+import { Audio, Video, ResizeMode } from 'expo-av';
 
 type AnimatedSplashProps = {
   onFinish: () => void;
@@ -13,9 +13,13 @@ const palette = {
 
 const BRAND_TEXT = 'MOONO';
 const TYPEWRITER_DURATION = 1000; // 1 second
-const HOLD_DURATION = 3500; // 3.5 seconds (to make total 4.5s)
-const TOTAL_DURATION = TYPEWRITER_DURATION + HOLD_DURATION; // 4.5 seconds total
-const SOUND_PLAY_DELAY = 1500; // 1.5 seconds - right when text stabilizes
+const HOLD_DURATION = 5000; // 5.0 seconds (to make total 6.0s)
+const TOTAL_DURATION = TYPEWRITER_DURATION + HOLD_DURATION; // 6.0 seconds total
+// Optional local video support:
+// 1) Put a file like: assets/videos/splash_intro.mp4
+// 2) Replace null with: require('../assets/videos/splash_intro.mp4')
+// Keep null to use the default Moono image splash.
+const SPLASH_VIDEO_SOURCE: number | null = require('../assets/videos/Siyah_Arka_Planlı_Göz_Kırpma_Videosu.mp4');
 
 export default function AnimatedSplash({ onFinish }: AnimatedSplashProps) {
   const [displayedText, setDisplayedText] = useState('');
@@ -25,24 +29,14 @@ export default function AnimatedSplash({ onFinish }: AnimatedSplashProps) {
 
   // Load and play splash sound
   useEffect(() => {
-    let soundTimer: NodeJS.Timeout | null = null;
-
     const loadAndPlaySound = async () => {
       try {
-        // Load the sound file
+        // Start sound immediately so audio and visual open together.
         const { sound } = await Audio.Sound.createAsync(
-          require('../assets/sfx/splash_chime.mp3')
+          require('../assets/sfx/splash_chime.mp3'),
+          { shouldPlay: true }
         );
         soundRef.current = sound;
-
-        // Play sound at the right timing (1.5 seconds - when text stabilizes)
-        soundTimer = setTimeout(async () => {
-          try {
-            await sound.playAsync();
-          } catch (playError) {
-            console.warn('Error playing splash sound:', playError);
-          }
-        }, SOUND_PLAY_DELAY);
       } catch (error) {
         console.warn('Error loading splash sound:', error);
       }
@@ -52,9 +46,6 @@ export default function AnimatedSplash({ onFinish }: AnimatedSplashProps) {
 
     // Cleanup: unload sound when component unmounts
     return () => {
-      if (soundTimer) {
-        clearTimeout(soundTimer);
-      }
       if (soundRef.current) {
         soundRef.current
           .unloadAsync()
@@ -140,11 +131,22 @@ export default function AnimatedSplash({ onFinish }: AnimatedSplashProps) {
           },
         ]}
       >
-        <Image
-          source={require('../assets/moono_bull.png')}
-          style={styles.bullImage}
-          resizeMode="contain"
-        />
+        {SPLASH_VIDEO_SOURCE ? (
+          <Video
+            source={SPLASH_VIDEO_SOURCE}
+            style={styles.splashVideo}
+            resizeMode={ResizeMode.COVER}
+            shouldPlay
+            isLooping
+            isMuted
+          />
+        ) : (
+          <Image
+            source={require('../assets/moono_bull.png')}
+            style={styles.bullImage}
+            resizeMode="contain"
+          />
+        )}
       </Animated.View>
 
       {/* MOONO Text Higher Up */}
@@ -180,6 +182,10 @@ const styles = StyleSheet.create({
     width: '85%',
     height: '100%',
     maxHeight: 400,
+  },
+  splashVideo: {
+    width: '100%',
+    height: '100%',
   },
   textContainer: {
     position: 'absolute',
