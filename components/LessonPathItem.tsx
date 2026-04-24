@@ -4,14 +4,14 @@ import { Ionicons } from '@expo/vector-icons';
 
 const palette = {
   background: '#000000',
-  card: '#1E1E1E',
-  cardActive: '#262626',
+  card: '#1A1A1A',
+  cardActive: '#1A1A1A',
   border: '#333333',
   accent: '#00C4CC',
   text: '#FFFFFF',
-  muted: '#A3A3A3',
+  muted: '#888888',
   success: '#16A34A',
-  locked: '#666666',
+  locked: '#888888',
 };
 
 type Lesson = {

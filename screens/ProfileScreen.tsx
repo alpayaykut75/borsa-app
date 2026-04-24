@@ -4,7 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 const palette = {
   background: '#000000',
   text: '#FFFFFF',
-  muted: '#A3A3A3',
+  muted: '#888888',
 };
 
 export default function ProfileScreen() {

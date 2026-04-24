@@ -61,13 +61,13 @@ function MainTabs() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: '#121212',
+          backgroundColor: '#1A1A1A',
           borderTopWidth: 0,
           elevation: 0,
           shadowOpacity: 0,
         },
-        tabBarActiveTintColor: '#22D3EE',
-        tabBarInactiveTintColor: '#666666',
+        tabBarActiveTintColor: '#00C4CC',
+        tabBarInactiveTintColor: '#888888',
         tabBarLabelStyle: {
           fontSize: 12,
           fontWeight: '600',
@@ -88,7 +88,7 @@ function MainTabs() {
         name="Assistant"
         component={AIScreen}
         options={{
-          tabBarLabel: 'Asistan',
+          tabBarLabel: 'Moono',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="sparkles" size={size} color={color} />
           ),
@@ -155,10 +155,10 @@ export default function App() {
         colors: {
           ...DarkTheme.colors,
           background: '#000000',
-          card: '#121212',
+          card: '#1A1A1A',
           border: '#333333',
           text: '#ffffff',
-          primary: '#22D3EE',
+          primary: '#00C4CC',
         },
       }}
     >
@@ -167,7 +167,7 @@ export default function App() {
         initialRouteName="Main"
         screenOptions={{
           headerStyle: {
-            backgroundColor: '#121212',
+            backgroundColor: '#1A1A1A',
           },
           headerTitleStyle: {
             fontWeight: '700',

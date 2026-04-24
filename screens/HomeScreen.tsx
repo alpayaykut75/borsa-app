@@ -34,11 +34,11 @@ type Unit = {
 
 const palette = {
   background: '#000000',
-  card: '#1E1E1E',
+  card: '#1A1A1A',
   border: '#333333',
-  accent: '#22D3EE',
+  accent: '#00C4CC',
   text: '#FFFFFF',
-  muted: '#A3A3A3',
+  muted: '#888888',
   danger: '#EF4444',
 };
 
@@ -189,10 +189,10 @@ export default function HomeScreen() {
       <View style={styles.container}>
         <View style={styles.header}>
           <View style={styles.avatarContainer}>
-            <Ionicons name="person-circle" size={48} color="#00C4CC" />
+            <Text style={styles.avatarEmoji}>🙂</Text>
           </View>
           <View style={styles.headerTextContainer}>
-            <Text style={styles.headerGreeting}>Hoş geldin Yatırımcı</Text>
+            <Text style={styles.headerGreeting}>Hoş geldin Ortak</Text>
             <Text style={styles.headerSubtitle}>Yatırım Yolculuğun</Text>
           </View>
         </View>
@@ -214,11 +214,23 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingTop: 12,
     paddingVertical: 24,
     paddingBottom: 32,
   },
   avatarContainer: {
     marginRight: 16,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: palette.accent,
+  },
+  avatarEmoji: {
+    fontSize: 34,
+    lineHeight: 38,
   },
   headerTextContainer: {
     flex: 1,

@@ -11,7 +11,7 @@ const palette = {
   text: '#FFFFFF',
   muted: '#888888',
   success: '#16A34A',
-  locked: '#666666',
+  locked: '#888888',
 };
 
 // Level-specific icons

@@ -25,12 +25,12 @@ import { useSfx } from '../src/hooks/useSfx';
 
 const palette = {
   background: '#000000',
-  card: '#1E1E1E',
-  cardAlt: '#262626',
+  card: '#1A1A1A',
+  cardAlt: '#1A1A1A',
   border: '#333333',
-  accent: '#22D3EE',
+  accent: '#00C4CC',
   text: '#FFFFFF',
-  muted: '#A3A3A3',
+  muted: '#888888',
   success: '#16A34A',
   danger: '#DC2626',
 };
@@ -889,7 +889,7 @@ const styles = StyleSheet.create({
   optionButton: {
     borderWidth: 1,
     borderColor: palette.border,
-    backgroundColor: '#121212',
+    backgroundColor: '#1A1A1A',
     borderRadius: 14,
     paddingVertical: 14,
     paddingHorizontal: 18,

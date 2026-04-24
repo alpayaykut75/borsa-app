@@ -1,6 +1,8 @@
 // --- src/screens/AIScreen.tsx ---
 import React, { useState, useCallback } from 'react';
-import { View, TextInput, TouchableOpacity, ScrollView, Text, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, Dimensions } from 'react-native';
+import { View, TextInput, TouchableOpacity, ScrollView, Text, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, Image } from 'react-native';
+// @ts-expect-error - @expo/vector-icons type declarations may be missing
+import { Ionicons } from '@expo/vector-icons';
 import { getMoonoResponse } from '../services/MoonoAIService'; // Adım 1'de oluşturulan servis
 import { formatMoonoResponse } from '../utils/MoonoFormatter'; // Formatlama utilitesi
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -20,7 +22,7 @@ type Message = {
 const INITIAL_WELCOME_MESSAGE: Message = {
     id: 1,
     sender: 'moono',
-    text: "Merhaba Ortak! Finansal karmaşayı çözmeye hazırım. Sorunu sor, kodu birlikte çözelim.", // Moono'nun samimi tonu
+    text: "Merhaba Ortak! Finansal konuları birlikte sadeleştirelim. Sorunu yaz, adım adım ilerleyelim.",
 };
 
 export default function AIScreen() {
@@ -50,7 +52,7 @@ export default function AIScreen() {
 
     } catch (error) {
       console.error("API Call Error:", error);
-      const errorMessage: Message = { id: Date.now() + 2, text: "Bağlantı kodlarında hata var, tekrar dene.", sender: 'moono' };
+      const errorMessage: Message = { id: Date.now() + 2, text: "Bağlantıda bir sorun oluştu Ortak. Kısa süre sonra tekrar deneyelim.", sender: 'moono' };
       setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
@@ -82,6 +84,15 @@ export default function AIScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
+        <View style={styles.header}>
+          <View style={styles.avatarContainer}>
+            <Image source={require('../../assets/moono_bull.png')} style={styles.avatar} />
+          </View>
+          <View>
+            <Text style={styles.headerTitle}>Moono</Text>
+            <Text style={styles.headerSubtitle}>Bilge Boğa Rehberin</Text>
+          </View>
+        </View>
         <ScrollView contentContainerStyle={styles.messageList}>
           {/* Mesajları normal sırada render et */}
           {messages.map(renderMessage)}
@@ -92,7 +103,7 @@ export default function AIScreen() {
             style={styles.textInput}
             value={input}
             onChangeText={setInput}
-            placeholder="Moono'ya bir soru sor..."
+            placeholder="Sorunu yaz..."
             placeholderTextColor="#666"
             editable={!isLoading}
             onSubmitEditing={handleSendMessage}
@@ -105,7 +116,7 @@ export default function AIScreen() {
             {isLoading ? (
               <ActivityIndicator color={DEEP_SPACE_BLACK} size="small" />
             ) : (
-              <Text style={styles.sendButtonText}>KOD ÇÖZ</Text>
+              <Ionicons name="send" size={18} color={DEEP_SPACE_BLACK} />
             )}
           </TouchableOpacity>
         </View>
@@ -121,6 +132,38 @@ const styles = StyleSheet.create({
   },
   keyboardView: {
     flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingVertical: 24,
+    paddingBottom: 32,
+  },
+  avatarContainer: {
+    marginRight: 16,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: NEON_CYAN,
+  },
+  avatar: {
+    width: '100%',
+    height: '100%',
+  },
+  headerTitle: {
+    color: 'white',
+    fontSize: 26,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  headerSubtitle: {
+    color: '#888888',
+    fontSize: 16,
+    fontWeight: '500',
   },
   messageList: {
     paddingHorizontal: 15,
@@ -141,7 +184,9 @@ const styles = StyleSheet.create({
   },
   moonoBubble: {
     alignSelf: 'flex-start',
-    backgroundColor: NEON_CYAN + '20', // Neon Cyan'ın %20 şeffaflığı (Fütüristik görünüm)
+    backgroundColor: DARK_MATTER_GREY,
+    borderWidth: 1,
+    borderColor: NEON_CYAN + '55',
     borderBottomLeftRadius: 5,
   },
   userText: {
@@ -173,15 +218,10 @@ const styles = StyleSheet.create({
   sendButton: {
     backgroundColor: NEON_CYAN,
     borderRadius: 25,
-    paddingHorizontal: 15,
-    paddingVertical: 10,
+    width: 50,
     height: 50,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  sendButtonText: {
-    color: DEEP_SPACE_BLACK, // Neon Cyan üzerinde siyah yazı
-    fontWeight: 'bold',
   },
 });
 

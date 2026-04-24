@@ -19,7 +19,7 @@ const palette = {
   background: '#000000',
   accent: '#00C4CC',
   text: '#FFFFFF',
-  muted: '#A3A3A3',
+  muted: '#888888',
 };
 
 export default function CompletionScreen({ route, navigation }: Props) {
