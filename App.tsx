@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { Animated } from 'react-native';
 import { NavigationContainer, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -110,6 +111,7 @@ function MainTabs() {
 
 export default function App() {
   const [showSplash, setShowSplash] = useState(true);
+  const appFadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     const initializeAuth = async () => {
@@ -139,6 +141,17 @@ export default function App() {
     setShowSplash(false);
   };
 
+  useEffect(() => {
+    if (!showSplash) {
+      appFadeAnim.setValue(0);
+      Animated.timing(appFadeAnim, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [showSplash, appFadeAnim]);
+
   if (showSplash) {
     return (
       <>
@@ -149,63 +162,65 @@ export default function App() {
   }
 
   return (
-    <NavigationContainer
-      theme={{
-        ...DarkTheme,
-        colors: {
-          ...DarkTheme.colors,
-          background: '#000000',
-          card: '#1A1A1A',
-          border: '#333333',
-          text: '#ffffff',
-          primary: '#00C4CC',
-        },
-      }}
-    >
-      <StatusBar style="light" />
-      <Stack.Navigator
-        initialRouteName="Main"
-        screenOptions={{
-          headerStyle: {
-            backgroundColor: '#1A1A1A',
+    <Animated.View style={{ flex: 1, opacity: appFadeAnim }}>
+      <NavigationContainer
+        theme={{
+          ...DarkTheme,
+          colors: {
+            ...DarkTheme.colors,
+            background: '#000000',
+            card: '#1A1A1A',
+            border: '#333333',
+            text: '#ffffff',
+            primary: '#00C4CC',
           },
-          headerTitleStyle: {
-            fontWeight: '700',
-            color: '#00C4CC',
-          },
-          headerTintColor: '#00C4CC',
-          headerShadowVisible: false,
-          headerBackTitle: '',
         }}
       >
-        <Stack.Screen
-          name="Main"
-          component={MainTabs}
-          options={{
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="Lesson"
-          component={LessonScreen}
-          options={({ route }) => ({
-            title: route.params.lessonTitle || 'Ders',
-            headerBackTitle: '',
+        <StatusBar style="light" />
+        <Stack.Navigator
+          initialRouteName="Main"
+          screenOptions={{
+            headerStyle: {
+              backgroundColor: '#1A1A1A',
+            },
             headerTitleStyle: {
-              fontSize: 28,
-              fontWeight: '800',
+              fontWeight: '700',
               color: '#00C4CC',
             },
-          })}
-        />
-        <Stack.Screen
-          name="Completion"
-          component={CompletionScreen}
-          options={{
-            headerShown: false,
+            headerTintColor: '#00C4CC',
+            headerShadowVisible: false,
+            headerBackTitle: '',
           }}
-        />
-      </Stack.Navigator>
-    </NavigationContainer>
+        >
+          <Stack.Screen
+            name="Main"
+            component={MainTabs}
+            options={{
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="Lesson"
+            component={LessonScreen}
+            options={({ route }) => ({
+              title: route.params.lessonTitle || 'Ders',
+              headerBackTitle: '',
+              headerTitleStyle: {
+                fontSize: 28,
+                fontWeight: '800',
+                color: '#00C4CC',
+              },
+            })}
+          />
+          <Stack.Screen
+            name="Completion"
+            component={CompletionScreen}
+            options={{
+              headerShown: false,
+            }}
+          />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </Animated.View>
   );
 }

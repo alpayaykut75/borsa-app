@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
-  Image,
   SafeAreaView,
   StyleSheet,
   Text,
@@ -10,6 +9,8 @@ import {
   View,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+// @ts-expect-error - @expo/vector-icons type declarations may be missing
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { CompositeNavigationProp } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
@@ -188,7 +189,7 @@ export default function HomeScreen() {
       <View style={styles.container}>
         <View style={styles.header}>
           <View style={styles.avatarContainer}>
-            <Image source={require('../assets/profile-avatar.png')} style={styles.avatarImage} />
+            <Ionicons name="person-circle" size={56} color={palette.accent} />
           </View>
           <View style={styles.headerTextContainer}>
             <Text style={styles.headerGreeting}>Hoş geldin Ortak</Text>
@@ -221,14 +222,8 @@ const styles = StyleSheet.create({
     marginRight: 16,
     width: 56,
     height: 56,
-    borderRadius: 28,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: palette.accent,
-  },
-  avatarImage: {
-    width: '100%',
-    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerTextContainer: {
     flex: 1,

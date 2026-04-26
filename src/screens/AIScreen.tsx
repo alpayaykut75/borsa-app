@@ -1,5 +1,5 @@
 // --- src/screens/AIScreen.tsx ---
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { View, TextInput, TouchableOpacity, ScrollView, Text, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, Image } from 'react-native';
 // @ts-expect-error - @expo/vector-icons type declarations may be missing
 import { Ionicons } from '@expo/vector-icons';
@@ -20,16 +20,26 @@ type Message = {
 };
 
 const INITIAL_WELCOME_MESSAGE: Message = {
-    id: 1,
-    sender: 'moono',
-    text: "Merhaba Ortak! Finansal konuları birlikte sadeleştirelim. Sorunu yaz, adım adım ilerleyelim.",
+  id: 1,
+  sender: 'moono',
+  text: 'Merhaba Ortak! Konulari birlikte sadeleştirelim. Sorunu yaz, adim adim ilerleyelim.',
 };
 
 export default function AIScreen() {
-  // Başlangıç mesajını ekliyoruz
-  const [messages, setMessages] = useState<Message[]>([INITIAL_WELCOME_MESSAGE]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isInputFocused, setIsInputFocused] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setMessages([INITIAL_WELCOME_MESSAGE]);
+    }, 300);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, []);
 
   // Gönder butonu tıklandığında çalışır
   const handleSendMessage = useCallback(async () => {
@@ -94,7 +104,7 @@ export default function AIScreen() {
           </View>
           <View>
             <Text style={styles.headerTitle}>Moono</Text>
-            <Text style={styles.headerSubtitle}>Bilge Boğa Rehberin</Text>
+            <Text style={styles.headerSubtitle}>Ortak, yanindayim</Text>
           </View>
         </View>
         <ScrollView contentContainerStyle={styles.messageList}>
@@ -104,13 +114,15 @@ export default function AIScreen() {
         
         <View style={styles.inputContainer}>
           <TextInput
-            style={styles.textInput}
+            style={[styles.textInput, isInputFocused && styles.textInputFocused]}
             value={input}
             onChangeText={setInput}
             placeholder="Sorunu yaz..."
             placeholderTextColor="#666"
             editable={!isLoading}
             onSubmitEditing={handleSendMessage}
+            onFocus={() => setIsInputFocused(true)}
+            onBlur={() => setIsInputFocused(false)}
           />
           <TouchableOpacity
             style={[styles.sendButton, { opacity: isLoading || !input.trim() ? 0.5 : 1 }]}
@@ -219,6 +231,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginRight: 10,
     height: 50,
+  },
+  textInputFocused: {
+    borderWidth: 1,
+    borderColor: NEON_CYAN,
   },
   sendButton: {
     backgroundColor: NEON_CYAN,

@@ -15,20 +15,16 @@ const palette = {
 };
 
 // Level-specific icons
-const getLevelIcon = (index: number, status: 'LOCKED' | 'ACTIVE' | 'COMPLETED'): { name?: string; emoji: string } => {
-  if (status === 'LOCKED') {
-    return { name: 'lock-closed', emoji: '🔒' };
-  }
-  
-  const icons = [
-    { emoji: '🌱' }, // Level 1 - Seed
-    { emoji: '🌿' }, // Level 2 - Sprout
-    { emoji: '📊' }, // Level 3 - Chart
-    { emoji: '🚀' }, // Level 4 - Rocket
-    { emoji: '🏆' }, // Level 5+ - Trophy
+const getLevelIconName = (index: number): keyof typeof Ionicons.glyphMap => {
+  const icons: Array<keyof typeof Ionicons.glyphMap> = [
+    'school-outline', // Level 1 - Cirak
+    'compass-outline', // Level 2 - Caylak
+    'bar-chart-outline', // Level 3 - Analist
+    'navigate-outline', // Level 4 - Stratejist
+    'ribbon-outline', // Level 5+ - Profesyonel
   ];
-  
-  return icons[Math.min(index, icons.length - 1)] || { emoji: '⭐' };
+
+  return icons[Math.min(index, icons.length - 1)] || 'star-outline';
 };
 
 type Unit = {
@@ -58,7 +54,7 @@ export default function UnitPathItem({
   totalLessons = 0,
 }: UnitPathItemProps) {
   const isLocked = status === 'LOCKED';
-  const levelIcon = getLevelIcon(index, status);
+  const levelIconName = getLevelIconName(index);
   const progress = totalLessons > 0 ? completedLessons / totalLessons : 0;
 
   const handlePress = () => {
@@ -81,14 +77,16 @@ export default function UnitPathItem({
       <View style={styles.unitContent}>
         {/* Icon Container */}
         <View style={styles.iconContainer}>
-          {isLocked ? (
-            <Ionicons 
-              name="lock-closed" 
-              size={24} 
-              color={palette.locked} 
-            />
-          ) : (
-            <Text style={styles.emojiIcon}>{levelIcon.emoji}</Text>
+          <Ionicons
+            name={levelIconName}
+            size={34}
+            color={palette.accent}
+            style={isLocked ? styles.levelIconLocked : undefined}
+          />
+          {isLocked && (
+            <View style={styles.lockBadge}>
+              <Ionicons name="lock-closed" size={16} color={palette.locked} />
+            </View>
           )}
         </View>
 
@@ -158,7 +156,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
   },
   unitCardLocked: {
-    opacity: 0.6,
+    opacity: 0.75,
   },
   unitContent: {
     flexDirection: 'row',
@@ -166,16 +164,29 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   iconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 12,
-    backgroundColor: '#0F0F0F',
+    width: 62,
+    height: 62,
+    borderRadius: 16,
+    backgroundColor: palette.background,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 16,
+    marginRight: 14,
   },
-  emojiIcon: {
-    fontSize: 32,
+  levelIconLocked: {
+    opacity: 0.4,
+  },
+  lockBadge: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: palette.card,
+    borderWidth: 1,
+    borderColor: palette.border,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   textContainer: {
     flex: 1,
@@ -188,7 +199,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   unitTitleLocked: {
-    color: palette.muted,
+    color: '#9A9A9A',
   },
   unitDescription: {
     fontSize: 14,
@@ -197,7 +208,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   unitDescriptionLocked: {
-    color: palette.locked,
+    color: '#7D7D7D',
   },
   progressContainer: {
     marginTop: 8,
