@@ -12,15 +12,19 @@ import {
 import { StatusBar } from 'expo-status-bar';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import type { CompositeScreenProps } from '@react-navigation/native';
 // @ts-expect-error - @expo/vector-icons type declarations may be missing
 import { Ionicons } from '@expo/vector-icons';
 
 import { supabase } from '../lib/supabase';
-import type { RootStackParamList } from '../App';
+import type { HomeStackParamList, RootStackParamList } from '../App';
 import LessonPathItem from '../components/LessonPathItem';
 import { useSfx } from '../src/hooks/useSfx';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'UnitDetail'>;
+type Props = CompositeScreenProps<
+  NativeStackScreenProps<HomeStackParamList, 'UnitDetail'>,
+  NativeStackScreenProps<RootStackParamList>
+>;
 
 type Lesson = {
   id: number;
@@ -69,14 +73,6 @@ export default function UnitDetailScreen({ route, navigation }: Props) {
   const handleBackPress = () => {
     if (navigation.canGoBack()) {
       navigation.goBack();
-      return;
-    }
-
-    const parent = navigation.getParent();
-    if (parent) {
-      parent.navigate('HomeStack' as never, {
-        screen: 'Home',
-      } as never);
       return;
     }
 

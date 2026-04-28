@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   ActivityIndicator,
   FlatList,
@@ -12,6 +13,7 @@ import { StatusBar } from 'expo-status-bar';
 // @ts-expect-error - @expo/vector-icons type declarations may be missing
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect } from '@react-navigation/native';
 import { CompositeNavigationProp } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -41,6 +43,7 @@ const palette = {
   muted: '#888888',
   danger: '#EF4444',
 };
+const PROFILE_AVATAR_KEY = 'moono_profile_avatar';
 
 export default function HomeScreen() {
   const navigation = useNavigation<NavigationProp>();
@@ -49,6 +52,7 @@ export default function HomeScreen() {
   const [error, setError] = useState<string | null>(null);
   const [completedLessonsByUnit, setCompletedLessonsByUnit] = useState<Record<number, number>>({});
   const [totalLessonsByUnit, setTotalLessonsByUnit] = useState<Record<number, number>>({});
+  const [profileAvatar, setProfileAvatar] = useState('🙂');
 
   const fetchUnits = useCallback(async () => {
     setLoading(true);
@@ -72,6 +76,21 @@ export default function HomeScreen() {
   useEffect(() => {
     fetchUnits();
   }, [fetchUnits]);
+
+  useFocusEffect(
+    useCallback(() => {
+      const loadAvatar = async () => {
+        try {
+          const savedAvatar = await AsyncStorage.getItem(PROFILE_AVATAR_KEY);
+          if (savedAvatar) setProfileAvatar(savedAvatar);
+        } catch (error) {
+          console.warn('Avatar load error:', error);
+        }
+      };
+
+      loadAvatar();
+    }, [])
+  );
 
   // Fetch user progress and lesson counts
   useEffect(() => {
@@ -201,7 +220,7 @@ export default function HomeScreen() {
       <View style={styles.container}>
         <View style={styles.header}>
           <View style={styles.avatarContainer}>
-            <Ionicons name="person-circle" size={56} color={palette.accent} />
+            <Text style={styles.avatarEmoji}>{profileAvatar}</Text>
           </View>
           <View style={styles.headerTextContainer}>
             <Text style={styles.headerGreeting}>Hoş Geldin Ortak</Text>
@@ -239,6 +258,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: palette.accent,
+    backgroundColor: '#0F0F0F',
+  },
+  avatarEmoji: {
+    fontSize: 28,
   },
   headerTextContainer: {
     flex: 1,

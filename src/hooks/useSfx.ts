@@ -1,5 +1,6 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Audio } from 'expo-av';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Map of SFX keys to their audio asset requires
 export const SFX_MAP = {
@@ -10,17 +11,39 @@ export const SFX_MAP = {
 } as const;
 
 type SfxKey = keyof typeof SFX_MAP;
+const SFX_ENABLED_STORAGE_KEY = 'moono_sfx_enabled';
+let sfxEnabledGlobal = true;
+const sfxSubscribers = new Set<(enabled: boolean) => void>();
+
+const notifySfxSubscribers = (enabled: boolean) => {
+  sfxSubscribers.forEach((callback) => callback(enabled));
+};
 
 export function useSfx() {
   const soundsRef = useRef<Partial<Record<SfxKey, Audio.Sound>>>({});
+  const [isSfxEnabled, setIsSfxEnabled] = useState(sfxEnabledGlobal);
 
-  // Placeholder flag for future settings integration
-  const isSfxEnabled = true;
+  useEffect(() => {
+    sfxSubscribers.add(setIsSfxEnabled);
+    return () => {
+      sfxSubscribers.delete(setIsSfxEnabled);
+    };
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
 
-    const loadAllSounds = async () => {
+    const initializeSfx = async () => {
+      try {
+        const storedValue = await AsyncStorage.getItem(SFX_ENABLED_STORAGE_KEY);
+        if (storedValue != null) {
+          sfxEnabledGlobal = storedValue === 'true';
+          notifySfxSubscribers(sfxEnabledGlobal);
+        }
+      } catch (error) {
+        console.warn('SFX settings load error:', error);
+      }
+
       try {
         const entries = Object.entries(SFX_MAP) as [SfxKey, any][];
 
@@ -42,7 +65,7 @@ export function useSfx() {
       }
     };
 
-    loadAllSounds();
+    initializeSfx();
 
     return () => {
       isMounted = false;
@@ -68,7 +91,7 @@ export function useSfx() {
   }, []);
 
   const playSound = async (key: SfxKey) => {
-    if (!isSfxEnabled) return;
+    if (!sfxEnabledGlobal) return;
 
     const sound = soundsRef.current[key];
     if (!sound) {
@@ -85,7 +108,17 @@ export function useSfx() {
     }
   };
 
-  return { playSound };
+  const setSfxEnabled = async (enabled: boolean) => {
+    sfxEnabledGlobal = enabled;
+    notifySfxSubscribers(enabled);
+    try {
+      await AsyncStorage.setItem(SFX_ENABLED_STORAGE_KEY, String(enabled));
+    } catch (error) {
+      console.warn('SFX settings save error:', error);
+    }
+  };
+
+  return { playSound, isSfxEnabled, setSfxEnabled };
 }
 
 

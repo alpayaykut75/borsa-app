@@ -14,6 +14,16 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../App';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Completion'>;
+type ConfettiPiece = {
+  id: number;
+  left: `${number}%`;
+  size: number;
+  delay: number;
+  duration: number;
+  rotate: string;
+  drift: number;
+  color: string;
+};
 
 const palette = {
   background: '#000000',
@@ -25,11 +35,11 @@ const palette = {
 export default function CompletionScreen({ route, navigation }: Props) {
   const { unitId, unitTitle, isUnitCompleted = false } = route.params;
   const pulseAnim = useRef(new Animated.Value(1)).current;
-  const confettiPieces = useMemo(
+  const confettiPieces = useMemo<ConfettiPiece[]>(
     () =>
       Array.from({ length: 18 }).map((_, index) => ({
         id: index,
-        left: `${(index / 18) * 100}%`,
+        left: `${(index / 18) * 100}%` as `${number}%`,
         size: 6 + (index % 3) * 2,
         delay: (index % 6) * 120,
         duration: 2300 + (index % 5) * 260,
