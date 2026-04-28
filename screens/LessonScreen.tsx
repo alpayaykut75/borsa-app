@@ -233,20 +233,16 @@ export default function LessonScreen({ route, navigation }: Props) {
 
   useLayoutEffect(() => {
     navigation.setOptions({
-      title: lessonTitle || 'Ders',
-      headerBackTitle: '',
-      headerBackVisible: true,
-      headerTitleStyle: {
-        fontSize: 28,
-        fontWeight: '800',
-        color: '#00C4CC',
-      },
+      headerShown: false,
     });
-  }, [navigation, lessonTitle]);
+  }, [navigation]);
 
   const currentStep = steps[currentIndex];
   const isCompleted = !loading && steps.length > 0 && currentIndex >= steps.length;
   const progress = steps.length > 0 ? (currentIndex + 1) / steps.length : 0;
+  const stepHeaderText = steps.length > 0
+    ? `Adım ${Math.min(currentIndex + 1, steps.length)} / ${steps.length}`
+    : 'Adım 0 / 0';
 
   const canContinue = useMemo(() => {
     if (!currentStep) return false;
@@ -309,17 +305,39 @@ export default function LessonScreen({ route, navigation }: Props) {
         // Kullanıcıya hata göstermeden devam et
       }
 
+      let isUnitCompleted = false;
+      if (unitId) {
+        const { data: unitLessonsData } = await supabase
+          .from('lessons')
+          .select('id')
+          .eq('unit_id', unitId);
+
+        const unitLessonIds = (unitLessonsData ?? []).map((lesson) => lesson.id);
+        if (unitLessonIds.length > 0) {
+          const { data: completedUnitLessonsData } = await supabase
+            .from('user_progress')
+            .select('lesson_id')
+            .eq('user_id', user.id)
+            .eq('is_completed', true)
+            .in('lesson_id', unitLessonIds);
+
+          isUnitCompleted = (completedUnitLessonsData?.length ?? 0) >= unitLessonIds.length;
+        }
+      }
+
       // Başarı ekranına yönlendir (unit bilgisiyle)
       if (unitId && unitTitle) {
         navigation.replace('Completion', {
           unitId: unitId,
           unitTitle: unitTitle,
+          isUnitCompleted,
         });
       } else {
         // Fallback: unit bilgisi yoksa sadece Completion'a git
         navigation.replace('Completion', {
           unitId: 0,
           unitTitle: 'Dersler',
+          isUnitCompleted: false,
         });
       }
       return;
@@ -327,6 +345,16 @@ export default function LessonScreen({ route, navigation }: Props) {
     
     setCurrentIndex((prev) => prev + 1);
     setQuizState({});
+  };
+
+  const handleLessonBackPress = () => {
+    if (currentIndex > 0) {
+      setCurrentIndex((prev) => prev - 1);
+      setQuizState({});
+      return;
+    }
+
+    navigation.goBack();
   };
 
   const ensureAnimation = (stepId: number) => {
@@ -696,10 +724,6 @@ export default function LessonScreen({ route, navigation }: Props) {
         <View style={styles.progressBarContainer}>
           <View style={[styles.progressBarFill, { width: `${progress * 100}%` }]} />
         </View>
-        <View style={styles.progressWrapper}>
-          <Text style={styles.progressLabel}>Adım {currentIndex + 1}</Text>
-          <Text style={styles.progressTotal}>/ {steps.length}</Text>
-        </View>
         <ScrollView
           style={styles.scrollContainer}
           contentContainerStyle={styles.scrollContent}
@@ -723,7 +747,29 @@ export default function LessonScreen({ route, navigation }: Props) {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="light" />
-      <View style={styles.container}>{renderBody()}</View>
+      <View style={styles.container}>
+        <View style={styles.customHeader}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={handleLessonBackPress}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="arrow-back" size={28} color={palette.text} />
+          </TouchableOpacity>
+          <View style={styles.headerTextContainer}>
+            <Text
+              style={styles.headerTitle}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.78}
+            >
+              {lessonTitle || 'Ders'}
+            </Text>
+            <Text style={styles.headerSubtitle}>{stepHeaderText}</Text>
+          </View>
+        </View>
+        {renderBody()}
+      </View>
     </SafeAreaView>
   );
 }
@@ -732,14 +778,14 @@ const markdownStyles = StyleSheet.create({
   body: {
     fontSize: 18,
     color: palette.text,
-    lineHeight: 28,
+    lineHeight: 26,
   },
   strong: {
     fontWeight: '700',
     color: '#FFFFFF',
   },
   paragraph: {
-    marginBottom: 12,
+    marginBottom: 10,
   },
 });
 
@@ -751,7 +797,34 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: 20,
+  },
+  customHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingTop: 12,
+    paddingVertical: 24,
+    paddingBottom: 20,
+  },
+  backButton: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  headerTextContainer: {
+    flex: 1,
+  },
+  headerTitle: {
+    fontSize: 26,
+    fontWeight: '700',
+    color: palette.accent,
+    marginBottom: 4,
+  },
+  headerSubtitle: {
+    fontSize: 16,
+    color: palette.muted,
+    fontWeight: '500',
   },
   centerContent: {
     flex: 1,
@@ -768,38 +841,23 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: '#111111',
     overflow: 'hidden',
-    marginBottom: 14,
+    marginBottom: 16,
   },
   progressBarFill: {
     height: '100%',
     backgroundColor: palette.accent,
-  },
-  progressWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 12,
-  },
-  progressLabel: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: palette.text,
-  },
-  progressTotal: {
-    fontSize: 15,
-    color: palette.muted,
   },
   scrollContainer: {
     flex: 1,
     marginBottom: 24,
   },
   scrollContent: {
-    paddingBottom: 40,
+    paddingBottom: 28,
   },
   card: {
     backgroundColor: palette.card,
     borderRadius: 20,
-    padding: 24,
+    padding: 26,
     borderWidth: 1,
     borderColor: palette.border,
     marginBottom: 24,
@@ -808,7 +866,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: palette.accent,
     letterSpacing: 1,
-    marginBottom: 12,
+    marginBottom: 10,
     textTransform: 'uppercase',
   },
   titleRow: {
@@ -834,7 +892,7 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: '800',
     color: palette.text,
-    lineHeight: 40,
+    lineHeight: 42,
   },
   emojiContainer: {
     alignItems: 'center',
@@ -996,6 +1054,7 @@ const styles = StyleSheet.create({
   },
   footerButton: {
     width: '100%',
+    marginTop: 8,
   },
   primaryButtonDisabled: {
     opacity: 0.4,

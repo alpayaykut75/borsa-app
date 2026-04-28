@@ -124,8 +124,20 @@ export default function HomeScreen() {
   };
 
   const getUnitStatus = (index: number): 'LOCKED' | 'ACTIVE' | 'COMPLETED' => {
-    if (index === 0) return 'ACTIVE';
-    return 'LOCKED';
+    const sortedUnits = [...units].sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
+    const currentUnit = sortedUnits[index];
+    if (!currentUnit) return 'LOCKED';
+
+    const isCompleted = (unit: Unit) => {
+      const completed = completedLessonsByUnit[unit.id] ?? 0;
+      const total = totalLessonsByUnit[unit.id] ?? 0;
+      return total > 0 && completed >= total;
+    };
+
+    if (isCompleted(currentUnit)) return 'COMPLETED';
+
+    const firstIncompleteIndex = sortedUnits.findIndex((unit) => !isCompleted(unit));
+    return index === (firstIncompleteIndex === -1 ? 0 : firstIncompleteIndex) ? 'ACTIVE' : 'LOCKED';
   };
 
   const renderState = () => {
@@ -192,8 +204,8 @@ export default function HomeScreen() {
             <Ionicons name="person-circle" size={56} color={palette.accent} />
           </View>
           <View style={styles.headerTextContainer}>
-            <Text style={styles.headerGreeting}>Hoş geldin Ortak</Text>
-            <Text style={styles.headerSubtitle}>Yatırım Yolculuğun</Text>
+            <Text style={styles.headerGreeting}>Hoş Geldin Ortak</Text>
+            <Text style={styles.headerSubtitle}>Adım Adım Borsa</Text>
           </View>
         </View>
         {renderState()}
@@ -222,14 +234,17 @@ const styles = StyleSheet.create({
     marginRight: 16,
     width: 56,
     height: 56,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: palette.accent,
   },
   headerTextContainer: {
     flex: 1,
   },
   headerGreeting: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: '700',
     color: palette.text,
     marginBottom: 4,

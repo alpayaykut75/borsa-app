@@ -104,7 +104,7 @@ export default function AIScreen() {
           </View>
           <View>
             <Text style={styles.headerTitle}>Moono</Text>
-            <Text style={styles.headerSubtitle}>Ortak, yanindayim</Text>
+            <Text style={styles.headerSubtitle}>Ortak, yanındayım</Text>
           </View>
         </View>
         <ScrollView contentContainerStyle={styles.messageList}>

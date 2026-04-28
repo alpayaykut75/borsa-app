@@ -105,6 +105,11 @@ export default function LessonPathItem({
       >
         <View style={styles.lessonContent}>
           <View style={styles.textContainer}>
+            {status === 'ACTIVE' && (
+              <View style={styles.nextLessonBadge}>
+                <Text style={styles.nextLessonBadgeText}>Aktif Ders</Text>
+              </View>
+            )}
             <Text
               style={[
                 styles.lessonTitle,
@@ -223,7 +228,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
   },
   lessonCardLocked: {
-    opacity: 0.5,
+    opacity: 0.72,
   },
   lessonContent: {
     flexDirection: 'row',
@@ -234,6 +239,22 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 12,
   },
+  nextLessonBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: palette.accent,
+    backgroundColor: 'rgba(0, 196, 204, 0.12)',
+    marginBottom: 8,
+  },
+  nextLessonBadgeText: {
+    fontSize: 11,
+    color: palette.accent,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+  },
   lessonTitle: {
     fontSize: 17,
     fontWeight: '700',
@@ -241,7 +262,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   lessonTitleLocked: {
-    color: palette.muted,
+    color: '#9A9A9A',
   },
   lessonDescription: {
     fontSize: 14,
@@ -249,7 +270,7 @@ const styles = StyleSheet.create({
     color: palette.muted,
   },
   lessonDescriptionLocked: {
-    color: palette.locked,
+    color: '#7D7D7D',
   },
   arrowContainer: {
     width: 24,

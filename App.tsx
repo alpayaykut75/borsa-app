@@ -19,7 +19,7 @@ import CompletionScreen from './screens/CompletionScreen';
 export type RootStackParamList = {
   Main: undefined;
   Lesson: { lessonId: number; lessonTitle?: string; unitId?: number; unitTitle?: string };
-  Completion: { unitId: number; unitTitle: string };
+  Completion: { unitId: number; unitTitle: string; isUnitCompleted?: boolean };
 };
 
 export type HomeStackParamList = {

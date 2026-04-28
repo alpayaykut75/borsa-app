@@ -1,5 +1,7 @@
-import { useLayoutEffect } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import {
+  Animated,
+  Image,
   SafeAreaView,
   StyleSheet,
   Text,
@@ -7,8 +9,6 @@ import {
   View,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-// @ts-expect-error - @expo/vector-icons type declarations may be missing
-import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import type { RootStackParamList } from '../App';
@@ -23,7 +23,23 @@ const palette = {
 };
 
 export default function CompletionScreen({ route, navigation }: Props) {
-  const { unitId, unitTitle } = route.params;
+  const { unitId, unitTitle, isUnitCompleted = false } = route.params;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const confettiPieces = useMemo(
+    () =>
+      Array.from({ length: 18 }).map((_, index) => ({
+        id: index,
+        left: `${(index / 18) * 100}%`,
+        size: 6 + (index % 3) * 2,
+        delay: (index % 6) * 120,
+        duration: 2300 + (index % 5) * 260,
+        rotate: `${index % 2 === 0 ? 220 : -220}deg`,
+        drift: (index % 2 === 0 ? 1 : -1) * (16 + (index % 4) * 5),
+        color: index % 3 === 0 ? '#00C4CC' : index % 3 === 1 ? '#FFFFFF' : '#888888',
+      })),
+    []
+  );
+  const confettiAnims = useRef(confettiPieces.map(() => new Animated.Value(0))).current;
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -31,39 +47,139 @@ export default function CompletionScreen({ route, navigation }: Props) {
     });
   }, [navigation]);
 
+  useEffect(() => {
+    const pulse = Animated.sequence([
+      Animated.timing(pulseAnim, {
+        toValue: 1.07,
+        duration: 260,
+        useNativeDriver: true,
+      }),
+      Animated.timing(pulseAnim, {
+        toValue: 1,
+        duration: 220,
+        useNativeDriver: true,
+      }),
+      Animated.timing(pulseAnim, {
+        toValue: 1.04,
+        duration: 220,
+        useNativeDriver: true,
+      }),
+      Animated.timing(pulseAnim, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]);
+
+    pulse.start();
+  }, [pulseAnim]);
+
+  useEffect(() => {
+    const animations = confettiAnims.map((anim, index) =>
+      Animated.timing(anim, {
+        toValue: 1,
+        duration: confettiPieces[index].duration,
+        delay: confettiPieces[index].delay,
+        useNativeDriver: true,
+      })
+    );
+
+    Animated.parallel(animations).start();
+  }, [confettiAnims, confettiPieces]);
+
   const handleContinue = () => {
-    // Navigate to Main tab, then to HomeStack's UnitDetail
-    const parent = navigation.getParent();
-    if (parent) {
-      parent.navigate('Main', {
-        screen: 'HomeStack',
-        params: {
-          screen: 'UnitDetail',
-          params: {
-            unitId: unitId,
-            unitTitle: unitTitle,
+    if (isUnitCompleted) {
+      navigation.reset({
+        index: 0,
+        routes: [
+          {
+            name: 'Main' as never,
+            params: {
+              screen: 'HomeStack',
+              params: {
+                screen: 'Home',
+              },
+            } as never,
           },
-        },
+        ],
       });
-    } else {
-      // Fallback: navigate to Main tab
-      navigation.navigate('Main');
+      return;
     }
+
+    navigation.reset({
+      index: 0,
+      routes: [
+        {
+          name: 'Main' as never,
+          params: {
+            screen: 'HomeStack',
+            params: {
+              screen: 'UnitDetail',
+              params: {
+                unitId,
+                unitTitle,
+              },
+            },
+          } as never,
+        },
+      ],
+    });
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="light" />
       <View style={styles.container}>
+        <View style={styles.confettiLayer} pointerEvents="none">
+          {confettiPieces.map((piece, index) => {
+            const translateY = confettiAnims[index].interpolate({
+              inputRange: [0, 1],
+              outputRange: [-80, 560],
+            });
+            const translateX = confettiAnims[index].interpolate({
+              inputRange: [0, 1],
+              outputRange: [0, piece.drift],
+            });
+            const rotate = confettiAnims[index].interpolate({
+              inputRange: [0, 1],
+              outputRange: ['0deg', piece.rotate],
+            });
+            const opacity = confettiAnims[index].interpolate({
+              inputRange: [0, 0.15, 0.92, 1],
+              outputRange: [0, 1, 1, 0],
+            });
+
+            return (
+              <Animated.View
+                key={piece.id}
+                style={[
+                  styles.confettiPiece,
+                  {
+                    left: piece.left,
+                    width: piece.size,
+                    height: piece.size * 1.8,
+                    backgroundColor: piece.color,
+                    opacity,
+                    transform: [{ translateY }, { translateX }, { rotate }],
+                  },
+                ]}
+              />
+            );
+          })}
+        </View>
         <View style={styles.content}>
-          <View style={styles.iconContainer}>
-            <Ionicons name="rocket" size={120} color={palette.accent} />
-          </View>
+          <Animated.View style={[styles.iconContainer, { transform: [{ scale: pulseAnim }] }]}>
+            <Image
+              source={require('../assets/levels/level1-cirak.png')}
+              style={styles.levelCharacter}
+              resizeMode="cover"
+            />
+          </Animated.View>
           
-          <Text style={styles.title}>Görev Tamamlandı! 🚀</Text>
+          <Text style={styles.title}>Görev Tamamlandı!</Text>
           
           <Text style={styles.subtitle}>
-            Harika gidiyorsun. Bir sonraki adımın kilidi açıldı.
+            Harika! Bir adım daha tamam. Kilidi açtın, devam!
           </Text>
         </View>
 
@@ -96,10 +212,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  confettiLayer: {
+    ...StyleSheet.absoluteFillObject,
+    overflow: 'hidden',
+  },
+  confettiPiece: {
+    position: 'absolute',
+    top: 0,
+    borderRadius: 2,
+  },
   iconContainer: {
     marginBottom: 32,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  levelCharacter: {
+    width: 130,
+    height: 130,
+    borderRadius: 65,
+    borderWidth: 2,
+    borderColor: palette.accent,
   },
   title: {
     fontSize: 32,

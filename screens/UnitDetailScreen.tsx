@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  Image,
   SafeAreaView,
   StyleSheet,
   Text,
@@ -39,6 +40,24 @@ const palette = {
   danger: '#EF4444',
 };
 
+const levelHeaderImages = [
+  require('../assets/levels/level1-cirak.png'),
+  require('../assets/levels/level2-caylak.png'),
+  require('../assets/levels/level3-analist.png'),
+  require('../assets/levels/level4-stratejist.png'),
+  require('../assets/levels/level5-profesyonel.png'),
+];
+
+const getLevelHeaderImage = (unitTitle?: string, unitId?: number) => {
+  const titleMatch = unitTitle?.match(/Seviye\s*(\d+)/i);
+  const titleLevel = titleMatch ? Number(titleMatch[1]) : NaN;
+  const fromTitle = Number.isFinite(titleLevel) ? titleLevel - 1 : -1;
+  const fromId = typeof unitId === 'number' ? unitId - 1 : -1;
+  const index = fromTitle >= 0 ? fromTitle : fromId;
+  const safeIndex = Math.min(Math.max(index, 0), levelHeaderImages.length - 1);
+  return levelHeaderImages[safeIndex];
+};
+
 export default function UnitDetailScreen({ route, navigation }: Props) {
   const { unitId, unitTitle } = route.params;
   const [lessons, setLessons] = useState<Lesson[]>([]);
@@ -46,6 +65,26 @@ export default function UnitDetailScreen({ route, navigation }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [completedLessonIds, setCompletedLessonIds] = useState<Set<number>>(new Set());
   const { playSound } = useSfx();
+
+  const handleBackPress = () => {
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+      return;
+    }
+
+    const parent = navigation.getParent();
+    if (parent) {
+      parent.navigate('HomeStack' as never, {
+        screen: 'Home',
+      } as never);
+      return;
+    }
+
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'Main' as never }],
+    });
+  };
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -164,6 +203,8 @@ export default function UnitDetailScreen({ route, navigation }: Props) {
   const completedCount = lessons.filter(lesson => completedLessonIds.has(lesson.id)).length;
   const totalCount = lessons.length;
   const completionPercentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+  const currentStep = totalCount > 0 ? Math.min(completedCount + 1, totalCount) : 1;
+  const levelHeaderImage = getLevelHeaderImage(unitTitle, unitId);
 
   const renderBody = () => {
     if (loading) {
@@ -213,15 +254,25 @@ export default function UnitDetailScreen({ route, navigation }: Props) {
         <View style={styles.customHeader}>
           <TouchableOpacity
             style={styles.backButton}
-            onPress={() => navigation.goBack()}
+            onPress={handleBackPress}
             activeOpacity={0.7}
           >
             <Ionicons name="arrow-back" size={28} color={palette.text} />
           </TouchableOpacity>
+          <View style={styles.headerAvatarContainer}>
+            <Image source={levelHeaderImage} style={styles.headerLevelAvatar} resizeMode="cover" />
+          </View>
           <View style={styles.headerContent}>
-            <Text style={styles.headerTitle}>{unitTitle || 'Dersler'}</Text>
+            <Text
+              style={styles.headerTitle}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.82}
+            >
+              {unitTitle || 'Dersler'}
+            </Text>
             <Text style={styles.headerSubtext}>
-              {totalCount} Ders • %{completionPercentage} Tamamlandı
+              Adım {currentStep}/{Math.max(totalCount, 1)} • %{completionPercentage}
             </Text>
           </View>
         </View>
@@ -244,24 +295,38 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingTop: 12,
-    paddingBottom: 24,
-    marginBottom: 8,
+    paddingVertical: 24,
+    paddingBottom: 32,
   },
   backButton: {
     width: 44,
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    marginRight: 8,
   },
   headerContent: {
     flex: 1,
   },
+  headerAvatarContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: palette.accent,
+    marginRight: 16,
+  },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: '800',
     color: palette.accent,
     marginBottom: 4,
+    flexShrink: 1,
+  },
+  headerLevelAvatar: {
+    width: '100%',
+    height: '100%',
   },
   headerSubtext: {
     fontSize: 14,
@@ -298,7 +363,7 @@ const styles = StyleSheet.create({
     color: '#000000',
   },
   listContent: {
-    paddingTop: 8,
+    paddingTop: 16,
     paddingBottom: 32,
   },
 });

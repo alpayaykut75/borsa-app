@@ -13,8 +13,8 @@ const palette = {
 
 const BRAND_TEXT = 'MOONO';
 const TYPEWRITER_DURATION = 1000; // 1 second
-const HOLD_DURATION = 5000; // 5.0 seconds (to make total 6.0s)
-const TOTAL_DURATION = TYPEWRITER_DURATION + HOLD_DURATION; // 6.0 seconds total
+const HOLD_DURATION = 3000; // 3.0 seconds (to make total 4.0s)
+const TOTAL_DURATION = TYPEWRITER_DURATION + HOLD_DURATION; // 4.0 seconds total
 // Optional local video support:
 // 1) Put a file like: assets/videos/splash_intro.mp4
 // 2) Replace null with: require('../assets/videos/splash_intro.mp4')
@@ -23,7 +23,9 @@ const SPLASH_VIDEO_SOURCE: number | null = require('../assets/videos/Siyah_Arka_
 
 export default function AnimatedSplash({ onFinish }: AnimatedSplashProps) {
   const [displayedText, setDisplayedText] = useState('');
+  const [isVideoReady, setIsVideoReady] = useState(!SPLASH_VIDEO_SOURCE);
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const videoOpacityAnim = useRef(new Animated.Value(SPLASH_VIDEO_SOURCE ? 0 : 1)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const soundRef = useRef<Audio.Sound | null>(null);
 
@@ -120,6 +122,16 @@ export default function AnimatedSplash({ onFinish }: AnimatedSplashProps) {
     };
   }, [fadeAnim, pulseAnim, onFinish]);
 
+  useEffect(() => {
+    if (isVideoReady) {
+      Animated.timing(videoOpacityAnim, {
+        toValue: 1,
+        duration: 220,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [isVideoReady, videoOpacityAnim]);
+
   return (
     <View style={styles.container}>
       {/* Moono Bull Image at Bottom with Pulse Animation */}
@@ -132,14 +144,21 @@ export default function AnimatedSplash({ onFinish }: AnimatedSplashProps) {
         ]}
       >
         {SPLASH_VIDEO_SOURCE ? (
-          <Video
-            source={SPLASH_VIDEO_SOURCE}
-            style={styles.splashVideo}
-            resizeMode={ResizeMode.COVER}
-            shouldPlay
-            isLooping
-            isMuted
-          />
+          <>
+            <Animated.View style={[styles.splashVideo, { opacity: videoOpacityAnim }]}>
+              <Video
+                source={SPLASH_VIDEO_SOURCE}
+                style={styles.splashVideo}
+                resizeMode={ResizeMode.COVER}
+                shouldPlay
+                isLooping
+                isMuted
+                onReadyForDisplay={() => setIsVideoReady(true)}
+                onError={() => setIsVideoReady(true)}
+              />
+            </Animated.View>
+            {!isVideoReady && <View style={styles.videoPlaceholder} />}
+          </>
         ) : (
           <Image
             source={require('../assets/moono_bull.png')}
@@ -186,6 +205,10 @@ const styles = StyleSheet.create({
   splashVideo: {
     width: '100%',
     height: '100%',
+  },
+  videoPlaceholder: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: palette.background,
   },
   textContainer: {
     position: 'absolute',

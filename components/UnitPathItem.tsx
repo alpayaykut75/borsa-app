@@ -1,4 +1,4 @@
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 // @ts-expect-error - @expo/vector-icons type declarations may be missing
 import { Ionicons } from '@expo/vector-icons';
 
@@ -14,17 +14,16 @@ const palette = {
   locked: '#888888',
 };
 
-// Level-specific icons
-const getLevelIconName = (index: number): keyof typeof Ionicons.glyphMap => {
-  const icons: Array<keyof typeof Ionicons.glyphMap> = [
-    'school-outline', // Level 1 - Cirak
-    'compass-outline', // Level 2 - Caylak
-    'bar-chart-outline', // Level 3 - Analist
-    'navigate-outline', // Level 4 - Stratejist
-    'ribbon-outline', // Level 5+ - Profesyonel
+const getLevelLockedImage = (index: number) => {
+  const images = [
+    require('../assets/levels/level1-cirak.png'),
+    require('../assets/levels/level2-caylak.png'),
+    require('../assets/levels/level3-analist.png'),
+    require('../assets/levels/level4-stratejist.png'),
+    require('../assets/levels/level5-profesyonel.png'),
   ];
 
-  return icons[Math.min(index, icons.length - 1)] || 'star-outline';
+  return images[Math.min(index, images.length - 1)];
 };
 
 type Unit = {
@@ -54,7 +53,7 @@ export default function UnitPathItem({
   totalLessons = 0,
 }: UnitPathItemProps) {
   const isLocked = status === 'LOCKED';
-  const levelIconName = getLevelIconName(index);
+  const levelLockedImage = getLevelLockedImage(index);
   const progress = totalLessons > 0 ? completedLessons / totalLessons : 0;
 
   const handlePress = () => {
@@ -77,11 +76,10 @@ export default function UnitPathItem({
       <View style={styles.unitContent}>
         {/* Icon Container */}
         <View style={styles.iconContainer}>
-          <Ionicons
-            name={levelIconName}
-            size={34}
-            color={palette.accent}
-            style={isLocked ? styles.levelIconLocked : undefined}
+          <Image
+            source={levelLockedImage}
+            style={[styles.levelImage, isLocked && styles.levelImageLocked]}
+            resizeMode="cover"
           />
           {isLocked && (
             <View style={styles.lockBadge}>
@@ -171,9 +169,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 14,
+    overflow: 'hidden',
   },
-  levelIconLocked: {
-    opacity: 0.4,
+  levelImage: {
+    width: '100%',
+    height: '100%',
+  },
+  levelImageLocked: {
+    opacity: 0.72,
   },
   lockBadge: {
     position: 'absolute',
