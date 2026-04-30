@@ -21,6 +21,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../lib/supabase';
 import type { MainTabParamList, HomeStackParamList } from '../App';
 import UnitPathItem from '../components/UnitPathItem';
+import { useSfx } from '../src/hooks/useSfx';
 
 type NavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<MainTabParamList, 'HomeStack'>,
@@ -53,6 +54,7 @@ export default function HomeScreen() {
   const [completedLessonsByUnit, setCompletedLessonsByUnit] = useState<Record<number, number>>({});
   const [totalLessonsByUnit, setTotalLessonsByUnit] = useState<Record<number, number>>({});
   const [profileAvatar, setProfileAvatar] = useState('🙂');
+  const { playSound } = useSfx();
 
   const fetchUnits = useCallback(async () => {
     setLoading(true);
@@ -136,6 +138,7 @@ export default function HomeScreen() {
   }, [units]);
 
   const handleStartLesson = (unit: Unit) => {
+    playSound('correct', { volume: 0.22, maxDurationMs: 200 });
     navigation.navigate('UnitDetail', {
       unitId: unit.id,
       unitTitle: unit.title,

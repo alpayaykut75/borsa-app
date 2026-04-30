@@ -37,12 +37,21 @@ const palette = {
 
 const { width: windowWidth } = Dimensions.get('window');
 const flipCardWidth = Math.min(windowWidth - 40, 420);
+const HIDE_AUDIO_STEPS = true;
 
-type LessonStepType = 'read' | 'quiz' | 'flashcard' | 'audio';
+type LessonStepType = 'read' | 'quiz' | 'flashcard' | 'audio' | 'final_quiz';
 
 type QuizOption = {
   id: string;
   text: string;
+};
+
+type FinalQuizQuestion = {
+  id?: string;
+  question: string;
+  options: QuizOption[];
+  correct_option_id: string;
+  explanation?: string;
 };
 
 type StepMetadata = {
@@ -59,6 +68,9 @@ type StepMetadata = {
   // Audio metadata
   audioUrl?: string; // Legacy
   audio_url?: string;
+  // Final quiz metadata
+  questions?: FinalQuizQuestion[];
+  pass_threshold?: number;
   // Read metadata
   text?: string;
   body?: string;
@@ -80,7 +92,18 @@ type QuizState = {
   isCorrect?: boolean;
   feedback?: string;
 };
+
+type FinalQuizState = {
+  hasStarted: boolean;
+  currentQuestionIndex: number;
+  selectedAnswers: Record<string, string>;
+  isSubmitted: boolean;
+  score: number;
+};
 type Props = NativeStackScreenProps<RootStackParamList, 'Lesson'>;
+
+const getFinalQuestionKey = (question: FinalQuizQuestion, index: number): string =>
+  question.id?.trim() || `q-${index}`;
 
 const emojiMap: Record<string, string> = {
   handshake: '🤝',
@@ -101,12 +124,19 @@ const emojiMap: Record<string, string> = {
 };
 
 export default function LessonScreen({ route, navigation }: Props) {
-  const { lessonId, lessonTitle, unitId, unitTitle } = route.params;
+  const { lessonId, lessonTitle, unitId, unitTitle, entryStatus } = route.params;
   const [steps, setSteps] = useState<LessonStep[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [quizState, setQuizState] = useState<QuizState>({});
+  const [finalQuizState, setFinalQuizState] = useState<FinalQuizState>({
+    hasStarted: false,
+    currentQuestionIndex: 0,
+    selectedAnswers: {},
+    isSubmitted: false,
+    score: 0,
+  });
   const { playSound } = useSfx();
   const [audioState, setAudioState] = useState<{
     sound: Audio.Sound | null;
@@ -138,7 +168,15 @@ export default function LessonScreen({ route, navigation }: Props) {
       setError(supabaseError.message);
       setSteps([]);
     } else {
-      const normalized = (data ?? []).map((step) => {
+      const normalized = (data ?? [])
+        .filter((step) => {
+          if (HIDE_AUDIO_STEPS && step.type === 'audio') return false;
+          const meta = (step.metadata && typeof step.metadata === 'object') ? (step.metadata as Record<string, unknown>) : null;
+          if (meta?.hidden_in_app === true) return false;
+          if (step.type === 'final_quiz' && meta?.quiz_key === 'S1_LEVEL_FINAL') return false;
+          return true;
+        })
+        .map((step) => {
         // Metadata'yı parse et (JSONB olarak geliyor)
         let parsedMetadata: StepMetadata = null;
         if (step.metadata) {
@@ -161,6 +199,13 @@ export default function LessonScreen({ route, navigation }: Props) {
       setSteps(normalized);
       setCurrentIndex(0);
       setQuizState({});
+      setFinalQuizState({
+        hasStarted: false,
+        currentQuestionIndex: 0,
+        selectedAnswers: {},
+        isSubmitted: false,
+        score: 0,
+      });
       flipAnimations.current = {};
       flippedState.current = {};
     }
@@ -247,8 +292,20 @@ export default function LessonScreen({ route, navigation }: Props) {
   const canContinue = useMemo(() => {
     if (!currentStep) return false;
     if (currentStep.type === 'quiz') return quizState.isCorrect === true;
+    if (currentStep.type === 'final_quiz') {
+      const metadata = currentStep.metadata || {};
+      const questions = Array.isArray(metadata.questions) ? metadata.questions : [];
+      if (questions.length === 0) return false;
+      if (finalQuizState.isSubmitted) return true;
+      if (!finalQuizState.hasStarted) return true;
+
+      const currentQuestion = questions[finalQuizState.currentQuestionIndex];
+      if (!currentQuestion) return false;
+      const currentQuestionKey = getFinalQuestionKey(currentQuestion, finalQuizState.currentQuestionIndex);
+      return Boolean(finalQuizState.selectedAnswers[currentQuestionKey]);
+    }
     return true;
-  }, [currentStep, quizState]);
+  }, [currentStep, quizState, finalQuizState]);
 
   const handleOptionSelect = (selectedOptionId: string, correctOptionId?: string) => {
     if (quizState.isCorrect) return;
@@ -269,8 +326,86 @@ export default function LessonScreen({ route, navigation }: Props) {
     }
   };
 
+  const handleFinalQuizOptionSelect = (questionId: string, selectedOptionId: string) => {
+    if (finalQuizState.isSubmitted) return;
+    setFinalQuizState((prev) => ({
+      ...prev,
+      selectedAnswers: {
+        ...prev.selectedAnswers,
+        [questionId]: selectedOptionId,
+      },
+    }));
+  };
+
+  const handleReviewLesson = () => {
+    setCurrentIndex(0);
+    setQuizState({});
+    setFinalQuizState({
+      hasStarted: false,
+      currentQuestionIndex: 0,
+      selectedAnswers: {},
+      isSubmitted: false,
+      score: 0,
+    });
+  };
+
   const handleNext = async () => {
     if (!currentStep) return;
+
+    if (currentStep.type === 'final_quiz') {
+      const metadata = currentStep.metadata || {};
+      const questions = Array.isArray(metadata.questions) ? metadata.questions : [];
+      const passThreshold = metadata.pass_threshold ?? 7;
+
+      if (!finalQuizState.hasStarted) {
+        setFinalQuizState((prev) => ({
+          ...prev,
+          hasStarted: true,
+        }));
+        return;
+      }
+
+      if (!finalQuizState.isSubmitted) {
+        const isLastQuestion = finalQuizState.currentQuestionIndex >= questions.length - 1;
+        if (!isLastQuestion) {
+          setFinalQuizState((prev) => ({
+            ...prev,
+            currentQuestionIndex: prev.currentQuestionIndex + 1,
+          }));
+          return;
+        }
+
+        const score = questions.reduce((total, question, index) => {
+          const questionKey = getFinalQuestionKey(question, index);
+          const selected = finalQuizState.selectedAnswers[questionKey];
+          return total + (selected === question.correct_option_id ? 1 : 0);
+        }, 0);
+
+        setFinalQuizState((prev) => ({
+          ...prev,
+          isSubmitted: true,
+          score,
+        }));
+
+        if (score >= passThreshold) {
+          playSound('complete');
+        } else {
+          playSound('error');
+        }
+        return;
+      }
+
+      if (finalQuizState.score < passThreshold) {
+        setFinalQuizState({
+          hasStarted: true,
+          currentQuestionIndex: 0,
+          selectedAnswers: {},
+          isSubmitted: false,
+          score: 0,
+        });
+        return;
+      }
+    }
     
     // Son adımdaysa ders tamamlandı
     if (currentIndex === steps.length - 1) {
@@ -306,13 +441,21 @@ export default function LessonScreen({ route, navigation }: Props) {
       }
 
       let isUnitCompleted = false;
+      let hasNextLessonInUnit = false;
       if (unitId) {
         const { data: unitLessonsData } = await supabase
           .from('lessons')
-          .select('id')
+          .select('id, sort_order')
           .eq('unit_id', unitId);
 
-        const unitLessonIds = (unitLessonsData ?? []).map((lesson) => lesson.id);
+        const sortedUnitLessons = [...(unitLessonsData ?? [])].sort(
+          (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
+        );
+        const unitLessonIds = sortedUnitLessons.map((lesson) => lesson.id);
+        const currentLessonIndex = sortedUnitLessons.findIndex((lesson) => lesson.id === lessonId);
+        hasNextLessonInUnit =
+          currentLessonIndex >= 0 && currentLessonIndex < sortedUnitLessons.length - 1;
+
         if (unitLessonIds.length > 0) {
           const { data: completedUnitLessonsData } = await supabase
             .from('user_progress')
@@ -325,12 +468,15 @@ export default function LessonScreen({ route, navigation }: Props) {
         }
       }
 
+      const forceReturnToUnitDetail = entryStatus === 'COMPLETED' && hasNextLessonInUnit;
+
       // Başarı ekranına yönlendir (unit bilgisiyle)
       if (unitId && unitTitle) {
         navigation.replace('Completion', {
           unitId: unitId,
           unitTitle: unitTitle,
           isUnitCompleted,
+          forceReturnToUnitDetail,
         });
       } else {
         // Fallback: unit bilgisi yoksa sadece Completion'a git
@@ -338,13 +484,22 @@ export default function LessonScreen({ route, navigation }: Props) {
           unitId: 0,
           unitTitle: 'Dersler',
           isUnitCompleted: false,
+          forceReturnToUnitDetail,
         });
       }
       return;
     }
     
+    playSound('correct', { volume: 0.2, maxDurationMs: 180 });
     setCurrentIndex((prev) => prev + 1);
     setQuizState({});
+    setFinalQuizState({
+      hasStarted: false,
+      currentQuestionIndex: 0,
+      selectedAnswers: {},
+      isSubmitted: false,
+      score: 0,
+    });
   };
 
   const handleLessonBackPress = () => {
@@ -657,6 +812,110 @@ export default function LessonScreen({ route, navigation }: Props) {
     );
   };
 
+  const renderFinalQuizStep = (step: LessonStep) => {
+    const metadata = step.metadata || {};
+    const questions = Array.isArray(metadata.questions) ? metadata.questions : [];
+    const passThreshold = metadata.pass_threshold ?? 7;
+
+    if (questions.length === 0) {
+      return (
+        <View style={styles.card}>
+          <Text style={styles.errorText}>Final test soruları bulunamadı.</Text>
+        </View>
+      );
+    }
+
+    if (!finalQuizState.hasStarted) {
+      return (
+        <View style={styles.card}>
+          <Text style={styles.stepTag}>Bölüm Sonu Testi</Text>
+          <Text style={styles.stepTitle}>Hazır mısın Ortak?</Text>
+          <Text style={styles.explanationText}>
+            Şimdi 10 soruluk bölüm sonu testine geçiyoruz. En az 7 doğru yaptığında bölümü geçeceksin.
+            Sakin kal, soruları dikkatle oku ve kendi yorumuna güven.
+          </Text>
+        </View>
+      );
+    }
+
+    if (finalQuizState.isSubmitted) {
+      const wrongQuestions = questions.filter((question, index) => {
+        const questionKey = getFinalQuestionKey(question, index);
+        const selected = finalQuizState.selectedAnswers[questionKey];
+        return selected !== question.correct_option_id;
+      });
+
+      return (
+        <View style={styles.card}>
+          <Text style={styles.stepTag}>Bölüm Sonu Testi</Text>
+          <Text style={styles.stepTitle}>
+            Skorun: {finalQuizState.score}/{questions.length}
+          </Text>
+          <Text style={[styles.feedbackText, finalQuizState.score >= passThreshold ? styles.feedbackSuccess : styles.feedbackError]}>
+            {finalQuizState.score >= passThreshold
+              ? `Tebrikler Ortak, testi geçtin.`
+              : `Bu tur ${passThreshold}/${questions.length} barajını geçemedin. Tekrar deneyelim.`}
+          </Text>
+
+          {finalQuizState.score < passThreshold && (
+            <TouchableOpacity style={styles.secondaryButton} onPress={handleReviewLesson} activeOpacity={0.85}>
+              <Text style={styles.secondaryButtonText}>Dersleri Tekrarla</Text>
+            </TouchableOpacity>
+          )}
+
+          {wrongQuestions.length > 0 && (
+            <View style={styles.explanationContainer}>
+              <Text style={styles.explanationLabel}>Yanlış Cevapların</Text>
+              {wrongQuestions.map((question, index) => {
+                const questionIndex = questions.findIndex((q) => q === question);
+                const questionKey = getFinalQuestionKey(question, questionIndex >= 0 ? questionIndex : index);
+                const selected = finalQuizState.selectedAnswers[questionKey];
+                const selectedText = question.options.find((opt) => opt.id === selected)?.text ?? 'Boş';
+                const correctText = question.options.find((opt) => opt.id === question.correct_option_id)?.text ?? '-';
+                return (
+                  <View key={`${questionKey}-wrong-${index}`} style={styles.wrongAnswerRow}>
+                    <Text style={styles.explanationText}>{index + 1}. {question.question}</Text>
+                    <Text style={styles.wrongAnswerText}>Senin cevabın: {selectedText}</Text>
+                    <Text style={styles.correctAnswerText}>Doğru cevap: {correctText}</Text>
+                  </View>
+                );
+              })}
+            </View>
+          )}
+        </View>
+      );
+    }
+
+    const currentQuestion = questions[finalQuizState.currentQuestionIndex];
+    const currentQuestionKey = getFinalQuestionKey(currentQuestion, finalQuizState.currentQuestionIndex);
+    const selectedOptionId = finalQuizState.selectedAnswers[currentQuestionKey];
+
+    return (
+      <View style={styles.card}>
+        <Text style={styles.stepTag}>Bölüm Sonu Testi</Text>
+        <Text style={styles.headerSubtitle}>
+          Soru {finalQuizState.currentQuestionIndex + 1} / {questions.length}
+        </Text>
+        <Text style={styles.stepTitle}>{currentQuestion.question}</Text>
+        <View style={styles.optionsWrapper}>
+          {currentQuestion.options.map((option) => (
+            <TouchableOpacity
+              key={option.id}
+              style={[
+                styles.optionButton,
+                selectedOptionId === option.id && styles.optionButtonSelected,
+              ]}
+              activeOpacity={0.75}
+              onPress={() => handleFinalQuizOptionSelect(currentQuestionKey, option.id)}
+            >
+              <Text style={styles.optionText}>{option.text}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+    );
+  };
+
   const renderStepContent = () => {
     if (!currentStep) return null;
     switch (currentStep.type) {
@@ -668,6 +927,8 @@ export default function LessonScreen({ route, navigation }: Props) {
         return renderFlashcardStep(currentStep);
       case 'audio':
         return renderAudioStep(currentStep);
+      case 'final_quiz':
+        return renderFinalQuizStep(currentStep);
       default:
         // Fallback: Bilinmeyen tip için boş görünüm
         return (
@@ -737,7 +998,15 @@ export default function LessonScreen({ route, navigation }: Props) {
           onPress={handleNext}
         >
           <Text style={styles.primaryButtonText}>
-            {currentIndex === steps.length - 1 ? 'Bitir' : 'Devam Et'}
+            {currentStep?.type === 'final_quiz'
+              ? (finalQuizState.isSubmitted
+                  ? (finalQuizState.score >= (((currentStep.metadata || {}).pass_threshold) ?? 7) ? 'Bölümü Bitir' : 'Testi Tekrar Çöz')
+                  : (!finalQuizState.hasStarted
+                      ? 'Teste Başla'
+                      : (finalQuizState.currentQuestionIndex >= (((currentStep.metadata || {}).questions as FinalQuizQuestion[] | undefined)?.length ?? 1) - 1
+                          ? 'Testi Bitir'
+                          : 'Sıradaki Soru')))
+              : (currentIndex === steps.length - 1 ? 'Bitir' : 'Devam Et')}
           </Text>
         </TouchableOpacity>
       </>
@@ -954,6 +1223,8 @@ const styles = StyleSheet.create({
   },
   optionButtonSelected: {
     borderColor: palette.accent,
+    backgroundColor: '#06383A',
+    transform: [{ scale: 0.98 }],
   },
   optionButtonCorrect: {
     backgroundColor: palette.success,
@@ -970,6 +1241,23 @@ const styles = StyleSheet.create({
   optionTextState: {
     color: '#FFFFFF',
     fontWeight: '700',
+  },
+  wrongAnswerRow: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#2A2A2A',
+  },
+  wrongAnswerText: {
+    marginTop: 6,
+    fontSize: 14,
+    color: '#FCA5A5',
+  },
+  correctAnswerText: {
+    marginTop: 4,
+    fontSize: 14,
+    color: '#86EFAC',
+    fontWeight: '600',
   },
   feedbackText: {
     marginTop: 16,

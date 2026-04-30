@@ -1,0 +1,1342 @@
+{
+  "curriculum": [
+    {
+      "level_code": "S1",
+      "level_title": "ÇIRAK",
+      "lessons": [
+        {
+          "lesson_code": "S1D1",
+          "lesson_title": "Borsa Nedir?",
+          "unit_id": 1,
+          "sort_order": 1,
+          "steps": [
+            {
+              "type": "read",
+              "title": "Borsaya Giriş",
+              "order_index": 1,
+              "content": "Borsa, şirketlerin sermaye ihtiyaçlarını karşılamak ve yatırımcıların bu şirketlere ortak olabilmesi için oluşturulmuş, düzenli ve denetlenen devasa bir pazardır. Tıpkı bir süpermarket gibi, burada da ürünler (hisseler) vardır. Ancak burada raflar sanaldır ve fiyatlar anlık olarak alıcı ile satıcının buluşmasıyla belirlenir.",
+              "metadata": {}
+            },
+            {
+              "type": "read",
+              "title": "Neden Var?",
+              "order_index": 2,
+              "content": "Şirketler büyümek, fabrika kurmak veya yeni pazarlara açılmak için paramek yerine, hisselerini halka arz ederek ortak bulurlar. Borsa, bu ortaklığın kurulduğu, hisselerin el değiştirdiği güvenli bir platformdur. Ekonominin aynası gibidir, ülke sanayisinin durumunu yansıtır.",
+              "metadata": {}
+            },
+            {
+              "type": "read",
+              "title": "Kimler İşlem Yapar?",
+              "order_index": 3,
+              "content": "Borsada bireysel yatırımcılar, bankalar, fon yöneticileri ve emeklilik şirketleri gibi kurumsal yapılar n amacı farklı olsa da, ortak nokta güvenli ve düzenli bir piyasada varlıklarını değerlendirmektir. Borsa, kuralları olan ve herkesin bu kurallara uyduğu şeffaf bir oyun alanıdır.",
+              "metadata": {}
+            },
+
+              "type": "quiz",
+              "title": "Mini Quiz 1",
+              "order_index": 4,
+              "content": "Borsanın temel işlevi nedir?",
+              "metadata": {
+                "options": [
+                  {"id": "a", "text": "Hızlı para kazandırmak"},
+                  {"id": "b", "text": "Sermaye ve yatırımcıyı buluşturmak"},
+                  {"id": "c", "text": "Ürünleri depolamak"}
+      
+                "correct_option_id": "b"
+              }
+            },
+            {
+              "type": "read",
+              "title": "Güvenli Liman",
+              "order_index": 5,
+              "content": "Borsalar SPK gibi otoriteler tarafından sıkı şekilde denetlenir. Bilgi paylaşımı esastır; şirketler tüm finansal durumlarını düzenli olarak açıklar. Bu sayede yatırımcılar kulaktan dolmagerçek verilere dayanarak karar verirler. Bu denetim mekanizması, piyasadaki şeffaflığı ve güveni korumak için en önemli unsurdur.",
+              "metadata": {}
+            },
+            {
+              "type": "read",
+              "title": "Sanal mı Gerçek mi?",
+              "order_index": 6,
+              "content": "Borsa ekranlarda gördüğümüz rakamlardan ibaret değildir. Satın aldığir fabrikanın tuğlasına, üretilen bir ürünün patentine veya o şirketin gelecekteki kazancına ortaktır. Borsa işlemleri dijital olsa da, temsil ettiği değerler son derece somuttur.",
+              "metadata": {}
+            },
+            {
+              "type": "quiz",
+              "title": "Mini Quiz 2",
+              "order_index": 7,
+              "content": "Borsa yatırımcısının en büyük güvencesi nedir?",
+              "metadata": {
+                "options": [
+                  {"id": "a", "text": "Denetim ve şeffaflık"},
+                  {"id": "b", hisseler"},
+                  {"id": "c", "text": "Ekranın rengi"}
+                ],
+                "correct_option_id": "a"
+              }
+            },
+            {
+              "type": "read",
+              "title": "Kısa Özet",
+              "order_index": 8,
+              "content": "Özetle borsa, finansal okuryazarlığın ilk durağıdır. Paranızı çarçur etmek yerine, değer üreteak olarak geleceğe yatırım yapma sanatıdır. Burada önemli olan sabır ve öğrenmeye açık olmaktır. Yarın hisse senedinin ne olduğuna daha yakından bakacağız.",
+              "metadata": {}
+            },
+            {
+              "type": "flashcard",
+              "title": "Borsa",
+              "order_index": 9,
+              "content": null,
+              "metadata": {
+                "front_text": "Borsa Nedir?",
+                "back_text": "Şirket paylarıp, yatırımcılar tarafından alınıp satıldığı, denetlenen piyasa."
+              }
+            },
+            {
+              "type": "read",
+              "title": "Senaryo",
+              "order_index": 10,
+              "content": "Ahmet, mahallesindeki fırının büyümesi için ona sermaye desteği verdiğini düşün. Fırın büyüdükçe Ahmet de kar payı alıyor. İşte borsa, Ahmet'in bu fırını devasa holdingler düzeyinde yapabilmesini sağlayan sistemdir. Ahmet artık bir yatırımcıdır, sadece parasını değil, şirketlerin geleceğine olan inancını da ortaya koymaktadır           {
+              "type": "quiz",
+              "title": "Mini Quiz 3",
+              "order_index": 11,
+              "content": "Bir hisse senedi aldığınızda ne yapmış olursunuz?",
+              "metadata": {
+                "options": [
+                  {"id": "a", "text": "Şirkete borç vermiş olursunuz"},
+                  {"id": "b", "text": "Şirkete ortak olmuş olursunuz"},
+                  {"id": "c", "text": "Sadece ürün kiralamış olursunuz"}
+                ],
+                "correct_option_id": "b"
+              }
+            },
+            {
+              "type": "audio  "title": "Sesli Özet",
+              "order_index": 12,
+              "content": null,
+              "metadata": {
+                "text": "Bu adım şu an uygulamada gizli."
+              }
+            },
+            {
+              "type": "final_quiz",
+              "title": "Borsa Bilgi Testi",
+              "order_index": 13,
+              "content": null,
+              "metadata": {
+             "pass_threshold": 7,
+                "questions": [
+                  {"id": "q1", "question": "Borsa hangi kurum tarafından denetlenir?", "options": [{"id": "a", "text": "Banka"}, {"id": "b", "text": "SPK"}, {"id": "c", "text": "Belediye"}], "correct_option_id": "b", "explanation": "Borsa İstanbul, Sermaye Piyasası Kurulu (SPK) tarafından denetlenir."},
+                  {"id": "q2", "question": "Borsa bir pazar mıdır?", "options": [{"id": "a", "text": "Evet"}, {"id": "b", "text": "Hayır"}, {"id": "c", "text": "Sadece sanal ortamdır"}], "correct_option_id": "a", "explanation": "Borsa, hisselerin alınıp satıldığı organır."},
+                  {"id": "q3", "question": "Şirketler neden borsaya gelir?", "options": [{"id": "a", "text": "Reklam için"}, {"id": "b", "text": "Sermaye bulmak için"}, {"id": "c", "text": "Hisse fiyatını düşürmek için"}], "correct_option_id": "b", "explanation": "Büyümek için sermayeye ihtiyaç duyarlar."},
+                  {"id": "q4", "question": "Borsada işlemler nasıl yapılır?", "options": [{"id": "a", "text": "Elden ele"}, {"id": "b", "text": "Dijital ortamda"}, {"id": "c", "text": "Sadece telefonla"}], "correct_option_id": "b", "explanation": "Modern borsalar dijital v                {"id": "q5", "question": "Hisse senedi sahibi olmak ne anlama gelir?", "options": [{"id": "a", "text": "Ortaklık"}, {"id": "b", "text": "Borçluluk"}, {"id": "c", "text": "Kira"}], "correct_option_id": "a", "explanation": "Hisse senedi, şirket ortaklığıdır."},
+                  {"id": "q6", "question": "Borsa şeffaf mıdır?", "options": [{"id": "a", "text": "Hayır, gizlidir"}, {"id": "b"Evet, veriler açıktır"}, {"id": "c", "text": "Sadece büyükler için açıktır"}], "correct_option_id": "b", "explanation": "Borsa şeffaflık üzerine kuruludur."},
+                  {"id": "q7", "question": "Yatırımcı neye ortak olur?", "options": [{"id": "a", "text": "Sadece fiyata"}, {"id": "b", "text": "Şirketin geleceğine"}, {"id": "c", "text": "Borsa binasına"}], "correct_option_id": "b", "explanation": "Şirketin değerine ve geleceğine ortak olunur."},
+  : "q8", "question": "Borsada işlem yapan kurumlar var mıdır?", "options": [{"id": "a", "text": "Evet"}, {"id": "b", "text": "Hayır"}, {"id": "c", "text": "Sadece bireyler vardır"}], "correct_option_id": "a", "explanation": "Kurumsal yatırımcılar piyasanın önemli parçasıdır.         {"id": "q9", "question": "Borsa ekonomiyi etkiler mi?", "options": [{"id": "a", "text": "Hayır"}, {"id": "b", "text": "Evet, aynasıdır"}, {"id": "c", "text": "Sadece kağıt üstünde"}], "correct_option_id": "b", "explanation": "Ekonominin performansını yansıtır."},
+                  {"id": "q10", "question": "İlk adım nedir?", "id": "a", "text": "Sorgulamak"}, {"id": "b", "text": "Öğrenmek"}, {"id": "c", "text": "Hemen almak"}], "correct_option_id": "b", "explanation": "Öğrenmek en temel adımdır."}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "lesson_code": "S1D2",
+          "lesson_title": "Hisse Senedi Nedir?",
+          "unit_id": 1,
+          "sort_order": 2,
+          "steps": [
+                      "type": "read",
+              "title": "Mülkiyet Belgesi",
+              "order_index": 1,
+              "content": "Hisse senedi, bir şirketin sermayesinin eşit parçalara bölünmüş halidir. Bir şirketten hisse aldığınızda, aslında o şirketin küçük bir parçasına sahip olursunuz. Bu kağıt veya dijital kayıt, size ortaklık hakla bazı avantajlar tanır. Artık sadece bir izleyici değil, bir paydaşsınız.",
+              "metadata": {}
+            },
+            {
+              "type": "read",
+              "title": "Hissedarlık Hakları",
+              "order_index": 2,
+              "content": "Hissğunuzda şirketin genel kurul toplantılarına katılabilir, yönetim kararları hakkında bilgi alabilirsiniz. Ancak günlük operasyonlara karışmazsınız. Hissedarlık, şirketin başarısından doğrudan etkilenmeyi ve büyüme potansiyelinden faydalanmayı içerir. Siz ne kadar çok hisseye sahipseniz, o şirketteki payınız o kadar artar.",
+              "metadata": {}
+            },
+            {
+              "type": "read",
+              "title": "Neden Hisse Alınır?",
+              "order_index": 3,
+              "content": "Yatırımchisse alır: Birincisi, şirketin kâr etmesiyle oluşacak değer artışı. İkincisi, şirketin elde ettiği kârı ortaklarına dağıtması (temettü). Her iki durumda da amaç, paranızın zamanla daha fazla değer üretmesidir. Hisse senedi sadece bir rakam değil, bir değer ortaklığıdır.",
+              "metadata": {}
+            },
+            {
+              "type": "quiz",
+              "title": "Mini Quiz 1",
+              "order_index": 4,
+              "conilerden hangisini temsil eder?",
+              "metadata": {
+                "options": [
+                  {"id": "a", "text": "Şirkete borç verdiğinizi"},
+                  {"id": "b", "text": "Şirkete ortak olduğunuzu"},
+                  {"id": "c", "text": "Şirketi kiraladığınızı"}
+                ],
+                "correct_option_id": "b"
+              }
+            },
+                 "type": "read",
+              "title": "Risk ve Getiri",
+              "order_index": 5,
+              "content": "Her yatırım gibi hisse senedi de risk taşır. Şirket iyi yönetilmezse veya piyasa koşulları kötüleşirse hisse fiyatı düşebilir. Ancak uzun vadede, doğru şirketlerde ortak olmak, genellikle enflasyona karşı koruma sağlar. Risk, yönetilebilir bir şeydir; çeşitlendirme yaparak tek bir şirkete bağımlı kalmazsınız.",
+              "metadata":  {
+              "type": "read",
+              "title": "Hisse Türleri",
+              "order_index": 6,
+              "content": "Borsada farklı hisse türleri vardır. Bazı şirketler çok köklüdür ve düzenli kâr payı öder. Bazı şirketler ise yeni kurulmuş, hızlı büyümeyi hedefleyen genç şirketlerdir. Hangi tür hisseyi seçeceğiniz tamamen sizin risk algınıza ve yatırım hedeflerinize bağlıdır. Çeşitli sektörlerden hisseler seçmek portföyünüzü dengeler.",
+              "metadata": {}
+            },
+            {
+              "type": "quiz",
+              "title": "Mini Quiz 2",
+              "order_index": 7,
+              "content": "Hisse senedi yatırımında temel beklenti n        "options": [
+                  {"id": "a", "text": "Sadece temettü"},
+                  {"id": "b", "text": "Değer artışı ve kâr payı"},
+                  {"id": "c", "text": "Kısa süreli kazanç"}
+                ],
+                "correct_option_id":         }
+            },
+            {
+              "type": "read",
+              "title": "Özetle",
+              "order_index": 8,
+              "content": "Hisse senedi, bir şirketin başarı hikayesine ortak olmaktır. Sadece fiyatı takip etmek yerine, şirketin ne ürettiğini, ne kadar sattığını ve gelecekteki potansiyelini anlamak sizi iyi bir yatırımcı yapar. Bir sonraki dersimizde, yatırımcı ile oyuncu arasındaki o ince farka bakacağızadata": {}
+            },
+            {
+              "type": "flashcard",
+              "title": "Hisse Senedi",
+              "order_index": 9,
+              "content": null,
+              "metadata": {
+                "front_text": "Hisse Senedi nedir?",
+                "back_text": "Bir şirketin sermayesinin belirli bir payını temsil eden, ortaklık hakkı veren belgedir."
+              }
+            },
+            {
+              "type": "read",
+              "title": "Senaryo",
+              "order_index": 10,
+              "content": "Bir kahve dükkanı zincirin hissesi olduğunu düşün. Sen 1 hisse aldığında, o dükkanın 1000'de 1'i senindir. Onlar daha çok kahve sattıkça ve yeni şubeler açtıkça, senin elindeki o 1 hissenin değeri de artar. İşte borsa, bu sahiplik haklarının dijital ortamda şeffaf bir şekilde takas edilmesidir.",
+              "metadata": {}
+            },
+            {
+              "type": "quiz",
+              "title": "Mini Quiz 3",
+              "o        "content": "Hissedar olmanın en büyük avantajı nedir?",
+              "metadata": {
+                "options": [
+                  {"id": "a", "text": "Her gün işlem yapmak"},
+                  {"id": "b", "text": "Şirketin başarısından pay almak"},
+                  {"id": "c", "text": "Her zaman kâr etmek"}
+                ],
+                "correct_option_id": "b"
+              }
+            },
+            {
+              "type": "audio",
+              "title": "Sesli Özet",
+              "order_index": 12,
+              "content": null,
+              "metadata": {
+                "text": "Bu adım şu an uygulamada gizli."
+              },
+            {
+              "type": "final_quiz",
+              "title": "Hisse Senedi Testi",
+              "order_index": 13,
+              "content": null,
+              "metadata": {
+                "pass_threshold": 7,
+                "questions": [
+                  {"id": "q1", "question": "Hisse senedi nedir?", "options": [{"id": "a", "text": "Borç senedi"}, {"id": "b", "text": "Ortaklık belgesi"}, {"id": "c", "text": "Eğitim belgesi"}], "correct_option_id": "b", "explanation": "Hisse senedi şirortaklığıdır."},
+                  {"id": "q2", "question": "Hissedarlar neye katılır?", "options": [{"id": "a", "text": "Günlük işlere"}, {"id": "b", "text": "Genel kurullara"}, {"id": "c", "text": "Hiçbir şeye"}], "correct_option_id": "b", "explanation": "Hissedarlar genel kurullara katılabilir."},
+                  {"id": "q3", "question": "Temettü nedir?", "options": [{"id": "a", "text": "Kâr payı"}, {"id": "b", "text": "Hisse fiyatı"}, {"id": "c", "text": "Zarar"}], "correct_option_id": "a", "explanation": "Temettü, şirketin kâr payı dağıtmasıdır."},
+                  {"id": "q4", "question": "Hisse senedi riski var mıdır?", "options": [{"id": "a", "text": "ext": "Evet, piyasa risklidir"}, {"id": "c", "text": "Sadece çok az"}], "correct_option_id": "b", "explanation": "Her yatırımda olduğu gibi hisse senedinde de risk vardır."},
+                  {"id": "q5", "question": "Hissedarlık hakları nelerdir?", "options": [{"id": "a", "text": "Sınırsız güç"}, {"id": "b", "text": "Ortaklık ve kâr payı"}, {"id": "c", "text": "Şirketi yönetmek"}], "correct_option_id": "b", "explanation": "Ortaklık h
+                  {"id": "q6", "question": "Portföy nedir?", "options": [{"id": "a", "text": "Hisse sepeti"}, {"id": "b", "text": "Banka hesabı"}, {"id": "c", "text": "Şirket binası"}], "correct_option_id": "a", "explanation": "Elinizdeki varlıkların toplamına portföy denir."},
+                  {"id": "q7", "question": "Hisse senedi sahibi olmak neyi yansıtır?", "options": [{"id": "a", "text": "Güven"}, {"id": "b"Spekülasyon"}, {"id": "c", "text": "Kumar"}], "correct_option_id": "a", "explanation": "Şirketin geleceğine olan güvendir."},
+                  {"id": "q8", "question": "Hisse senedi fiyatı neye göre değişir?", "options": [{"id": "a", "text": "Şans"}, {"id": "b", "text": "Talep ve Arz"}, {"id": "c", "text": "Sadece zamana"}], "correct_option_id": "b", "explanation": "Fiyat arz ve talep ile belirlenir."},
+                  {"id": "q9", "question": "Uzun vade neden önemlidir?", "options": [{"id": "a", "text": "Risk azaid": "b", "text": "Daha çok para kazanılır"}, {"id": "c", "text": "Hisse senedi için zorunludur"}], "correct_option_id": "a", "explanation": "Uzun vade dalgalanmaların etkisini azaltır."},
+                  {"id": "q10", "question": "Hissedar olmanın yolu nedir?", "options": [{"id": "a", "text": "Borsadan alım"}, {"id": xt": "Kredi"}, {"id": "c", "text": "Hibe"}], "correct_option_id": "a", "explanation": "Borsadan hisse alarak olunur."}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "lesson_code": "S1D3",
+          "lesson_title": "Yatırımcı mı, Oyuncu mu?",
+          "unit_id": 1,
+          "sort_order": 3,
+          "steps": [
+            {
+              "type": "read",
+              "title": "İki Farklı Dünya",
+              "order_index": 1,
+              "c: "Borsada iki temel insan tipi vardır: Yatırımcı ve Oyuncu (Spekülatör). Yatırımcı, orta ve uzun vadeye odaklanır; şirketin değerine ve geleceğine bakar. Oyuncu ise kısa vadeli fiyat hareketlerinden, günlük değişimlerden anlık kazanç peşindedir. Hangisi olduğunuz, finansal sağlığınızı doğrudan belirler.",
+              "metadata": {}
+            },
+            {
+              "type": "read",
+              "tit           "order_index": 2,
+              "content": "Yatırımcı, elma ağacı diken çiftçiye benzer. Ağacın büyümesi için sabreder, güneşine ve suyuna bakar. Bekler. Şirketlerin büyümesini, gelişmesini ve değerini takip eder. Hisse senedini bir varlık olarak görür ve piyasa düşüşlerinde paniklemek yerine, değerine inandığı şirketi daha yakından inceler.",
+          ,
+            {
+              "type": "read",
+              "title": "Oyuncu Kimdir?",
+              "order_index": 3,
+              "content": "Oyuncu ise 'günlük' avcı gibidir. Piyasadaki anlık hareketleri, 'tüyo' denilen dedikoduları ve teknik grafiklerin en ufak kıpırtısını takip eder. Heyecan arar, hızlı sonuç ister. Ancak piyasa çok değişkendir; hızlı kazanç isteği genellikle ters teperek büyük kayıplara yol açabilir.",
+              "metadata": {}
+            },
+           "quiz",
+              "title": "Mini Quiz 1",
+              "order_index": 4,
+              "content": "Yatırımcı ile oyuncu arasındaki en temel fark nedir?",
+              "metadata": {
+                "options": [
+                  {"id": "a", "text": "Kullanılan ekranlar"},
+                  {"id": "b", "text": "Zaman odakları"},
+                  {"id": "c", "text": "Bankaları"}
+                ],
+                "correct_option_id": "b"
+              }
+            },
+      
+              "type": "read",
+              "title": "Zamanın Gücü",
+              "order_index": 5,
+              "content": "Yatırımcının en büyük kozu zamandır. Kısa vadeli bir fırtına, uzun vadeli yatırımcının rotasını değiştirmez. Ancak oyuncu, fırtına çıktığında elindeki her şeyi satıp panik yapabilir. Yatırımcı, bileşik getirinin tadını çıkarır; oyuncu ise işlem ücretleri ve yanlış zamanlamalarla sermayesini eriteb      },
+            {
+              "type": "read",
+              "title": "Psikolojik Dayanıklılık",
+              "order_index": 6,
+              "content": "Yatırımcılık, duyguları kontrol etme sanatıdır. Fiyatlar düştüğünde korkmamak, yükseldiğinde ise açgözlü olmamak gerekir. Oyuncu ise duygularının esiridir. Her kırmızı mumda panik, her yeşil mumdaarlı kazanç, duyguların değil, aklın ve disiplinin ürünüdür.",
+              "metadata": {}
+            },
+            {
+              "type": "quiz",
+              "title": "Mini Quiz 2",
+              "order_index": 7,
+              "content": "Hangisi yatırımcıya ait bir özelliktir?",
+              "metadata": {
+                "options": [
+                  {"id": "a", "text": "Hızlı kazanç arzusu"},
+                  {"id": "b", "text": "Sabır ve disiplin"},
+                  {"id": "c", "text": "Dedikoduları takip etmek"}
+                ],
+                ": "b"
+              }
+            },
+            {
+              "type": "read",
+              "title": "Özetle",
+              "order_index": 8,
+              "content": "Borsada kalıcı olmak istiyorsanız, bir oyuncu değil, bir yatırımcı gibi düşünmelisiniz. Şirketleri analiz edin, temellerine bakın ve uzun vadeyi hedefleyin. Kısa yoldan zengin olma hayali, borsanın en büyük yanılgısıdır. Bir sonraki derste yerel pazarımız Borsa İstanbul'u tanıyacağa": {}
+            },
+            {
+              "type": "flashcard",
+              "title": "Yatırımcı vs Oyuncu",
+              "order_index": 9,
+              "content": null,
+              "metadata": {
+                "front_text": "Yatırımcı vs Oyuncu",
+                "back_text": "Yatırımcı değer odaklı ve uzuncudur; Oyuncu anlık fiyat hareketlerine ve hıza odaklanır."
+              }
+            },
+              "type": "read",
+              "title": "Senaryo",
+              "order_index": 10,
+              "content": "Düşün ki bir ev alıyorsun. Oyuncu, evi alır almaz ertesi gün fiyatı artacak mı diye her saat başı emlakçıya sorar. Yatırımcı ise evin bulunduğu mahallenin gelişimine, evin yapısına ve kira getirisine bakar; 10 yıl orada kalmayı planlar. Hangisi daha huzurludur?",
+              "metadata": {}
+       
+              "type": "quiz",
+              "title": "Mini Quiz 3",
+              "order_index": 11,
+              "content": "Hangisi yanlış bir bakış açısıdır?",
+              "metadata": {
+                "options": [
+                  {"id": "a", "text": "Şirket değerine odaklanmak"},
+                  {"id": "b", "text": "Kısa yoldan zengin olmaya çalışmak"},
+                  {"id": "c", "text": "Risk analizi yapmak"}
+                ],
+                "correct_option_id": "b"
+              }
+            },
+              "type": "audio",
+              "title": "Sesli Özet",
+              "order_index": 12,
+              "content": null,
+              "metadata": {
+                "text": "Bu adım şu an uygulamada gizli."
+              }
+            },
+            {
+              "type": "final_quiz",
+              "title": "Yatırımcı mı Oyuncu mu Testi",
+              "order_index": 13,
+              "content": null,
+              "metadata": {          "pass_threshold": 7,
+                "questions": [
+                  {"id": "q1", "question": "Yatırımcının odak noktası nedir?", "options": [{"id": "a", "text": "Hızlı al-sat"}, {"id": "b", "text": "Uzun vade"}, {"id": "c", "text": "Dedikodular"}], "correct_option_id": "b", "explanation": "Yatırımcı uzun vadeli değer odaklıdır."},
+                  {"id": "q2", "question": "Oyuncu neye odaklanır?", "options": [{"id": "a", "text": "Şirket analizi"}, {"id": "b", "text": "Anlık fiyat hareketi"}, {"id": "c", "text": "Temettü"}], "correct_option_id": "b", "explanation": "Oyuncu kısa vadeli hareketlere odaklanır."},
+      "q3", "question": "Hangi tutum daha sağlıklıdır?", "options": [{"id": "a", "text": "Sabır"}, {"id": "b", "text": "Acelecilik"}, {"id": "c", "text": "Duygusallık"}], "correct_option_id": "a", "explanation": "Sabır borsanın temelidir."},
+                  {"id": "q4", "question": "Borsada kalıcı olmak için hangisi gerekir?", "options": [{"id": "a", "text": "Şans"}, {"id": "b", "text": "Disiplin"}, {"id": "c", "text": "Çok para"}], "correct_option_id": "b", "explanation": "Disiplin başarının anahtarıdır."},
+                  {"id": "q5", "question": "Fiyat dyapar?", "options": [{"id": "a", "text": "Panik yapar"}, {"id": "b", "text": "Analiz eder"}, {"id": "c", "text": "Satıp kaçar"}], "correct_option_id": "b", "explanation": "Değerine inandığı şirketi inceler."},
+                  {"id": "q6", "question": "Bileşik getiri kime yarar?", "options": [{"id": "a", "text": "Yatırımcıya"}, {"id": "b", "text": "Oyuncuya"}, {"id": "c", "text": "Herkese değil"}]ption_id": "a", "explanation": "Uzun vadeli yatırımcıya yarar."},
+                  {"id": "q7", "question": "Tüyo ile işlem yapmak neyi gösterir?", "options": [{"id": "a", "text": "Yatırımcılığı"}, {"id": "b", "text": "Oyunculuğu"}, {"id": "c", "text": "Akıllılığı"}], "correct_option_id": "b", "explanation": "Tüyo oyuncu işidir."},
+                  {"id": "q8", "question": "Duygular yatırımda nasıl etkiler?", "options": [{"id": "a", "text": "Pozit": "Negatif"}, {"id": "c", "text": "Etkisiz"}], "correct_option_id": "b", "explanation": "Duygular hata yaptırır."},
+                  {"id": "q9", "question": "Yatırımcı neyi takip eder?", "options": [{"id": "a", "text": "Grafik anlık"}, {"id": "b", "text": "Temel veriler"}, {"id": "c", "text": "Söylentiler"}], "correct_option_id": "b", "explanation": "Temel veriler ve şirket başarısı."},
+                  {"id": "q10", "question": "En iyi strateji hangisidir?", "options": [{"id": "a", "text": "Disiplinli {"id": "b", "text": "Kısa yoldan zenginlik"}, {"id": "c", "text": "Rastgele alım"}], "correct_option_id": "a", "explanation": "Disiplinli yatırım kazanır."}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "lesson_code": "S1D4",
+          "lesson_title": "Borsa İstanbul Nedir?",
+          "unit_id": 1,
+          "sort_order": 4,
+          "steps": [
+            {
+              "type": "read",
+              "title": "Evimiz Borsa İstanbul",
+              "ndex": 1,
+              "content": "Borsa İstanbul (BIST), Türkiye'nin tek borsasıdır. Hisselerin, borçlanma araçlarının, vadeli işlem sözleşmelerinin alınıp satıldığı, Sermaye Piyasası Kurulu denetimindeki merkezi yapıdır. Burada işlem gören şirketlerin performansı, ülke ekonomisinin genel görünümünü yansıtır. Yatırımcılığa buradan başlarız.",
+                 {
+              "type": "read",
+              "title": "BIST Tarihçesi",
+              "order_index": 2,
+              "content": "Geçmişte İMKB (İstanbul Menkul Kıymetler Borsası) adıyla kurulan kurum, daha sonra Borsa İstanbul A.Ş. adını alarak daha kapsayıcı bir yapıya dönüştü. Bugün sadece hisse senedi değil, altın, döviz ve çeşitli türev ürünlerin de işlem gördüğü, dünya standartlarında dijital bir altyapıya sahip bir kuruluştur.",
+                   {
+              "type": "read",
+              "title": "Neler İşlem Görür?",
+              "order_index": 3,
+              "content": "Borsa İstanbul'da sadece hisse senetleri yoktur. Şirket tahvilleri, devlet borçlanma araçları, yatırım fonları ve çeşitli finansal ürünler listelenir. Ancak yeni bir yatırımcı için en çok odaklanılan ve en erişilebilir alan 'Pay Piyasası', yani hisse senetlerinin olduğu kısımdır.",
+              "metadata": {}
+            },
+            {
+                "title": "Mini Quiz 1",
+              "order_index": 4,
+              "content": "Borsa İstanbul'un (BIST) temel işlevi nedir?",
+              "metadata": {
+                "options": [
+                  {"id": "a", "text": "Devlet bankalarını yönetmek"},
+                  {"id": "b", "text": "Menkul kıymetlerin alım-satımını sağlamak"},
+                  {"id": "c", "text": "Döviz kurlarını belirlemek"}
+                ],
+    orrect_option_id": "b"
+              }
+            },
+            {
+              "type": "read",
+              "title": "İşleyiş Mantığı",
+              "order_index": 5,
+              "content": "Borsa İstanbul, alıcı ve satıcıyı emir tahtalarında buluşturur. Siz bir emir girdiğinizde, sistem otomatik olarak karşı tarafta o fiyata satış yapan (veya alım yapan) birini bulur ve eşleştirir. Bu işlem milisaniyeler sürer. Her şey kayıt altındadır ve izlenebilir.",
+             },
+            {
+              "type": "read",
+              "title": "Neden BIST?",
+              "order_index": 6,
+              "content": "Kendi ülkemizin borsasında yatırım yapmak, yerli şirketlerimizi desteklemek ve onların büyümesine ortak olmak demektir. Ayrıca Türk şirketlerinin iş yapış biçimini, sektörlerini ve piyasa dinamiklerini anlamak, yabancı bir borsaya göre çok daha kolay ve anlaşılırdır.",
+              "metadata": {}
+            },
+            {
+              "type": "quiz",
+              "title": "Mini Quiz 2",
+              "order_index": 7,
+              "content": "Borsa İstanbul'da ne tür işlemler yapılabilir?",
+              "metadata": {
+                "options": [
+                 e hisse senedi"},
+                  {"id": "b", "text": "Hisse, borçlanma araçları, fonlar"},
+                  {"id": "c", "text": "Sadece altın"}
+                ],
+                "correct_option_id": "b"
+              }
+            },
+            {
+              "type": "read",
+              "title": "Özetle",
+              "order_index": 8,
+              "content": "Borsa İstanbul, yatırım yolculuğunuzun ana merkezidir. Kuralları, işleyişi ve sunduğu fırsstandartlarında bir platformdur. Burada işlem yapmak, ekonominin kalbinde yer almaktır. Şimdi bu dev yapının nasıl hareket ettiğini, yani endeksleri öğrenme vakti.",
+              "metadata": {}
+            },
+            {
+              "type": "flashcard",
+             "Borsa İstanbul",
+              "order_index": 9,
+              "content": null,
+              "metadata": {
+                "front_text": "Borsa İstanbul (BIST)",
+                "back_text": "Türkiye'nin tek ve denetlenen merkezi borsa platformudur."
+              }
+            },
+            {
+              "type": "read",
+              "title": "Senaryo",
+              "order_index": 10,
+              "content": "Borsa İstanbul'u büyük bir kapalı çarşıya benzetebilirsin. Ama bu çarşıda tüm dükkanlar kurallara bağlı, fiyatlar herkesin görebileceği tabelalarda yazılı ve herkes güvenli bir şekilde alışveriş yapıyor. Aradaki tek fark, buradaki dükkanların aslında devasa fabrikalar veya hizmet şirketleri olmasıdır.",
+        },
+            {
+              "type": "quiz",
+              "title": "Mini Quiz 3",
+              "order_index": 11,
+              "content": "Borsa İstanbul'da işlemler nasıl gerçekleşir?",
+              "metadata": {
+                "options": [
+                  {"id": "a", "text": "Elle teklif vererek"},
+                  {"id": "b", "text": "Dijital sistemle eşleşerek"},
+                  {"id": "c", "text": "Telefonla arayarak"}
+                ],
+                "correct_option_id": "b"
+              }
+            },
+            {
+              "type": "audio",
+              "title": "Sesli Özet",
+              "dex": 12,
+              "content": null,
+              "metadata": {
+                "text": "Bu adım şu an uygulamada gizli."
+              }
+            },
+            {
+              "type": "final_quiz",
+              "title": "Borsa İstanbul Testi",
+              "order_index": 13,
+              "content": null,
+              "metta": {
+                "pass_threshold": 7,
+                "questions": [
+                  {"id": "q1", "question": "Borsa İstanbul'un kısa adı nedir?", "options": [{"id": "a", "text": "BIST"}, {"id": "b", "text": "İMKB"}, {"id": "c", "text": "İST"}, {"id": "correct_option_id": "a", "explanation": "Borsa İstanbul'un güncel kısaltması BIST'tir."}], "correct_option_id": "a", "explanation": "Borsa İstanbul BIST olarak bilinir."},
+                  {"id": "q2", "question": "Borsa İstanbul'da neler satılır?", "options": [{"id": "a", "text": "Sadece hisse"}, {"id": "b", "text": "Çeşitli finansal ürünler"}, {"id": "c", "text": "Sadece altın"}], "correct_option_id": "b", "explaon ve borçlanma araçları vardır."},
+                  {"id": "q3", "question": "Borsa İstanbul'u kim denetler?", "options": [{"id": "a", "text": "Bakanlık"}, {"id": "b", "text": "SPK"}, {"id": "c", "text": "Merkez Bankası"}], "correct_option_id": "b", "explanation": "Sermaye Piyasası Kurulu denetler."},
+                  {"id": "q4", "question": "Borsa İstanbul eskiden ne idi?", "options": [{"id": "a", "text": "İMKB"}, {"id": "b", "text": "Halk Bankası"}, {"id": "c", "text": "Yoktu"}], "correct_option_id": "a", "explanation": "Eski adı İMKB idi."},
+                  {"id": "q5", "question": "Emirler nasıl eşleşir?", "opti", "text": "Milisaniyede"}, {"id": "b", "text": "Günde bir kez"}, {"id": "c", "text": "Elle"}], "correct_option_id": "a", "explanation": "Sistem anlık eşleştirir."},
+                  {"id": "q6", "question": "BIST verileri neyi yansıtır?", "options": [{"id": "a", "text": "Ekonomiyi"}, {"id": "b", "text": "urumunu"}, {"id": "c", "text": "Sadece dövizi"}], "correct_option_id": "a", "explanation": "Ülke ekonomisinin aynasıdır."},
+                  {"id": "q7", "question": "Yerli borsada yatırımın avantajı?", "options": [{"id": "a", "text": "Daha kolay anlama"}, {"id": "b", "text": "Daha çok kazanç"}, {"id": "c", "text": "Risk yok"}], "correct_option_id": "a", "explanation": "Piyasaykolaydır."},
+                  {"id": "q8", "question": "Borsa İstanbul merkezi yapıda mıdır?", "options": [{"id": "a", "text": "Evet"}, {"id": "b", "text": "Hayır"}, {"id": "c", "text": "Her şehirde var"}], "correct_option_id": "a", "explanation": "Merkezi ve düzenlidir."},
+                  {"id": "q9", "question": "BIST'te ne tür piyasa vardır?", "options": [{"id": "a", "text": "Pay Piyasası"}, {"id": "b", "text": "Kuyumsı"}, {"id": "c", "text": "Semt pazarı"}], "correct_option_id": "a", "explanation": "Hisseler Pay Piyasasında işlem görür."},
+                  {"id": "q10", "question": "Sistem nasıl çalışır?", "options": [{"id": "a", "text": "Şeffaf"}, {"id": "b", "text": "Gizli"}, {"id": "c", "text": "Karmaşık"}], "correct_option_id": "a", "explanation": "Şeffaf bir yapıdır."}
+                ]
+           }
+          ]
+        },
+        {
+          "lesson_code": "S1D5",
+          "lesson_title": "Endeksler ve BIST 100",
+          "unit_id": 1,
+          "sort_order": 5,
+          "steps": [
+            {
+              "type": "read",
+              "title": "Borsa'nın Gösterge Paneli",
+              "order_index": 1,
+              "content": "Borsa İstanbul'i yüzlerce şirketin fiyatını tek tek takip etmek imkansızdır. İşte bu noktada 'Endeksler' devreye girer. Endeksler, belirli kriterlere göre seçilmiş hisselerin fiyat hareketlerini yansıtan bir gösterge paneli gibidir. Borsanın genel istikametini endekslere bakarak anlarız.",
+              "metadata": {}
+            },
+            {
+              "type": "read",
+              "title": "BIST 100 Nedir?",
+              "order_index": 2,
+              "content": "BISTanbul'da işlem gören en büyük ve en likit 100 şirketin performansını ölçen ana endekstir. Yani 'Bugün borsa yükseldi' dendiğinde kastedilen genellikle BIST 100'dür. Ekonominin genel havasını temsil ettiği için herkesin gözü bu endekstedir.",
+              "metadata": {}
+            },
+            {
+              "type": "read",
+              "title": "Diğer Endeksler",
+              "order_index": 3,
+              "content": "Sadece BIST 100 yoktur; BIST 30, BIST Mali, BIST Sınai gibi pek çok endeks bulunur. BIST 30, en büyük 30 şirketi; BIST Sınai, üretim yapasler sayesinde hangi sektörün yükseldiğini veya düştüğünü kolayca ayırt edebiliriz.",
+              "metadata": {}
+            },
+            {
+              "type": "quiz",
+              "title": "Mini Quiz 1",
+              "order_index": 4,
+              "content": "BIST 100 endeksi neyi temsil eder?",
+              "metadata": {
+     "options": [
+                  {"id": "a", "text": "En küçük 100 şirketi"},
+                  {"id": "b", "text": "En büyük ve likit 100 şirketi"},
+                  {"id": "c", "text": "Sadece bankaları"}
+                ],
+                "correct_option_id": "b"
+              }
+            },
+            {
+              "type": "read",
+              "title": "Neden Önemli?",
+              "order_index": 5,
+              "content": "Endeksler, yatırımcıların piyasa trendini anlamasına yardımcı olur. Piyayimserlik mi var yoksa karamsarlık mı? Endeksin yönü size fikir verir. Ayrıca yatırım fonları, performanslarını genellikle bu endekslere göre kıyaslar (benchmark). Yani endeks, piyasa için bir karne notudur.",
+              "metadata": {}
+            },
+            {
+              "type": "read",
+              "title": "Endeksler Nasıl Değişir?",
+              "order_index": 6,
+              "content": "Endeksler, içindeki şirketlerin ağırlıklarına göre hareket eder. Büyük şirketlerin fiyatı çok değişirse endeks de ona göre tepki verir. Endeksi bir basket gibi düşünün; içindeki meyvelerin (şirketlerin) çorlığı azalır, hepsi olgunlaşırsa sepet değerlenir.",
+              "metadata": {}
+            },
+            {
+              "type": "quiz",
+              "title": "Mini Quiz 2",
+              "order_index": 7,
+              "content": "Borsanın genel havasını anlamak için neye bakılır?",
+              "metadata": {
+                "options": [
+                  {"id": "a", "text": "Bir hissenin fiyatına"},
+                  {"id": "b", "text": "Ana endekslere"},
+                  {"id": "c", " haberlere"}
+                ],
+                "correct_option_id": "b"
+              }
+            },
+            {
+              "type": "read",
+              "title": "Özetle",
+              "order_index": 8,
+              "content": "Endeksler, karmaşık piyasa verilerini sadeleştirir. BIST 100, Türkiye piyasasının nabzını tutar. Artık borsanın ne olduğunu, hisse senedinin mantığını ve genel yönü nasıl takip edeceğimizi biliyoruz. Sıradaki dersimiz: Fiyatların neden inip çıktığı, yani arz-talep deadata": {}
+            },
+            {
+              "type": "flashcard",
+              "title": "BIST 100",
+              "order_index": 9,
+              "content": null,
+              "metadata": {
+                "front_text": "BIST 100 nedir?",
+                "back_text": "Borsa İstanbul'daki en büyük ve en likit 100 şirketin ağırlıklı ortalamasıdır."
+              }
+            },
+            {
+              "type": "read",
+              "title": "Senaryo",
+              "order_index": 10,
+              "content": "Bir okulun başarısını ölçmek için tüm öğrencilerin not ortalamasına bakarsın. Borsa İstanbul'daki yüzlerce şirketin 'not ortalaması' da endekslerdir. BIST 0 öğrencisidir. Onlar iyi not alırsa (fiyat artarsa), okulun genel başarısı yükselir.",
+              "metadata": {}
+            },
+            {
+              "type": "quiz",
+              "title": "Mini Quiz 3",
+              "order_index": 11,
+              "content": "Endeksler için hangisi doğrudur?",
+              "metadata": {
+                "options": [
+                  {"id": "a", "text": "Piyasanın genel yönünü gösterir"},
+                  {"id": "b"eysel hisse fiyatını garanti eder"},
+                  {"id": "c", "text": "Sadece bankaları kapsar"}
+                ],
+                "correct_option_id": "a"
+              }
+            },
+            {
+              "type": "audio",
+              "title": "Sesli Özet",
+              "order_index": 12,
+              "content": null,
+              "metadata": {
+                "text": "Bu adım şu an uygulamada gizli."
+              }
+            },
+            {
+              "type": "final_quiz",
+              "t "Endeksler Testi",
+              "order_index": 13,
+              "content": null,
+              "metadata": {
+                "pass_threshold": 7,
+                "questions": [
+                  {"id": "q1", "question": "BIST 100 endeksi nedir?", "options": [{"id": "a", "text": "100 şirket ortalaması"}, {"id": "b", "text": "100 TL fiyatı"}, {"id": "c", "text": "100 yıllık veri"}], "correct_option_id": "a", "explanation": "En büyük 100 şirketin performansıdır."},
+                  {"id": "q2", "question": "Endeksler ne için kullanılır?", "options": [{"id": "a",se fiyatı sabitlemek"}, {"id": "b", "text": "Piyasa yönünü anlamak"}, {"id": "c", "text": "Şirket kurmak"}], "correct_option_id": "b", "explanation": "Piyasa yönünü ve trendi gösterir."},
+                  {"id": "q3", "question": "BIST 30 nedir?", "options": [{"id": "a", "text": "30 şirket endeksi"}, {"id": "b", "text": "30 TL hisse"}, {"id": "c", "text": "30 yıllık borsa"}], "correct_option_id": "a", "explanation": "En büyük 30 şirkettir."},
+                  {"id": "q4", "question": "Endeks hareketini ne belirler?", "options": [{"id": "a", "text": "Hığı"}, {"id": "b", "text": "Rastgele seçim"}, {"id": "c", "text": "Sabit fiyatlar"}], "correct_option_id": "a", "explanation": "İçindeki şirketlerin ağırlığına göre değişir."},
+                  {"id": "q5", "question": "BIST 100 neden önemlidir?", "options": [{"id": "a", "text": "Borsanın aynasıdır"}, {"id": "b", "text": "En ucuz endekstir"}, {"id": "c", "text": "Sadece teknik bir terimdir"}], "correct_option_id": "a", "explanation": "Ekonominin geansıtır."},
+                  {"id": "q6", "question": "Endeksler karmaşıklığı ne yapar?", "options": [{"id": "a", "text": "Artırır"}, {"id": "b", "text": "Azaltır/sadeleştirir"}, {"id": "c", "text": "Değiştirmez"}], "correct_option_id": "b", "explanation": "Verileri sadeleştirir."},
+                  {"id": "q7", "question": "Benchmark ne demektir?", "options": [{"id": "a", "text": "Kıyaslama"}, {"id": "b", "tex {"id": "c", "text": "Borsa"}], "correct_option_id": "a", "explanation": "Performans ölçüm kıyaslamasıdır."},
+                  {"id": "q8", "question": "BIST Sınai endeksi neyi kapsar?", "options": [{"id": "a", "text": "Fabrikaları"}, {"id": "b", "text": "Bankaları"}, {"id": "c", "text": "Hizmetleri"}], "correct_option_id": "a", "explanation": "Üretim yapan şirketlerdir."},
+                  {"id": "q9", "question": "Endeksler düşerse ne olur?", "options": [{"id": "a", "tdüşer"}, {"id": "b", "text": "Borsa artar"}, {"id": "c", "text": "Etki olmaz"}], "correct_option_id": "a", "explanation": "Borsanın düştüğü anlamına gelir."},
+                  {"id": "q10", "question": "Endeksler yatırımcıya ne sağlar?", "options": [{"id": "a", "text": "Kolay takip"}, {"id": "b", "text": "Garanti kazanç"}, {"id": "c", "text": "Bedava hisse"}], "correct_optioxplanation": "Piyasayı kolay takip etmeyi sağlar."}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "lesson_code": "S1D6",
+          "lesson_title": "Fiyat Nasıl Oluşur?",
+          "unit_id": 1,
+          "sort_order": 6,
+          "steps": [
+            {
+              "type": "read",
+              "title": "Borsanın Görünmez Eli",
+              "order_index": 1,
+              "content": "Borsada fiyatlar, tıpkı bir semt pazarın'Arz ve Talep' dengesiyle oluşur. Bir hisseyi almak isteyenlerin sayısı (Talep), satmak isteyenlerin sayısından (Arz) fazla ise fiyat yükselir. Satmak isteyenler alıcılardan fazlaysa, fiyat düşer. Borsa, bu iki gücün sürekli savaşıdır.",
+              "metadata": {}
+            },
+            {
+              "type": "read",
+              "title": "Alıcı ve Satıcı",
+              "order_index": 2,
+              "content": "Ekrandaki fiyatlar rastgele değildir.isseyi 'şu fiyata alırım' der, bir başkası 'şu fiyata satarım' der. Emirler eşleştiği an, o fiyat 'gerçekleşen fiyat' olur. Borsa, bu fiyatı sürekli güncelleyerek piyasadaki genel kanaati yansıtır.",
+              "metadata": {}
+            },
+            {
+              "type": "read",
+              "title": "Fiyatı Ne Etkiler?",
+              "order_index": 3,
+              "content": "Peki insanlar neden 'satmak' veya 'almak' ister? Şirketin açıkladığı kâr, yeni bieki gelişmeler, ülke ekonomisi veya global krizler... Tüm bu bilgiler, yatırımcıların psikolojisini ve kararlarını etkiler. Haberi iyi olan şirketin talebi artar, fiyatı yükselir.",
+              "metadata": {}
+            },
+            {
+              "type": "quiz",
+              "title": "Mini Quiz 1",
+              "order_index": 4,
+              "content": "Fiyat artışı neyi gösterir?",
+              "metadata": {
+                "options": [
+  {"id": "a", "text": "Arzın talepten fazla olduğunu"},
+                  {"id": "b", "text": "Talebin arzdan fazla olduğunu"},
+                  {"id": "c", "text": "Arz ve talebin eşit olduğunu"}
+                ],
+                "correct_option_id": "b"
+              }
+            },
+            {
+              "type": "read",
+              "title": "Psikoloji Faktörü",
+              "order_index": 5,
+              "content": "Borsa bazen mantıklı davranmaz. Korku veya açgözlülük, fiyatları gerçek değerinden çok uzaanlar paniğe kapıldığında, şirket kötü olmasa bile satış yapıp fiyatı düşürebilirler. İşte bu yüzden, fiyatın nedenini (temel veriler) anlamak, fiyatın kendisinden daha önemlidir.",
+              "metadata": {}
+            },
+            {
+              "type": "read",
+              "title": "Piyasa Derinliği",
+              "order_index": 6,
+              "content": "Bir hissenin çok alıcısı ve satıcısı varsa, ona 'derinlikli' hisse denir. Böyle hisselerde fiyat kolay kol yaptığı hisselerde ise tek bir büyük emir, fiyatı çok hızlı değiştirebilir. Bu yüzden yeni yatırımcılar genellikle büyük, bilinen şirketleri tercih eder.",
+              "metadata": {}
+            },
+            {
+              "type": "quiz",
+              "title": "Mini Quiz 2",
+              "order_index": 7,
+              "content": "Fiyat düşüşü hangi durumda gerçekleşir?",
+              "metadata": {
+                "options": [
+                  {"id": "a", "text": "Alıcılar satıcılardan çoksa"},
+                  {"id": "b", "text": "Satıcılar al   {"id": "c", "text": "İşlem hacmi çok yüksekse"}
+                ],
+                "correct_option_id": "b"
+              }
+            },
+            {
+              "type": "read",
+              "title": "Özetle",
+              "order_index": 8,
+              "content": "Fiyat, piyasanın o anki 'değer biçme' şeklidir. Arz ve talep, haberler ve psikoloji ile harmanlanır. Unutmayın: Fiyat ne ödediğinizdir, değer ise ne aldığınızdır. Borsa, sabırlı olanların sa kazandığı yerdir. Şimdi sırada piyasanın dili olan Boğa ve Ayı piyasası var.",
+              "metadata": {}
+            },
+            {
+              "type": "flashcard",
+              "title": "Fiyat Oluşumu",
+              "order_index": 9,
+              "content": null,
+              "metadata": {
+                "front_text": "Fiyat nasıl oluşur?",
+                "back_text": "Arz ve talep dengesiyle, alıcı ve satıcıların emirlerinin eşleşmesiyle oluşur."
+              }
+            },
+            {
+              "type": "read",
+              "title":      "order_index": 10,
+              "content": "Düşün ki bir konser bileti var. Herkes almak istiyor ama bilet az (talep çok). Fiyat ne olur? Uçar. Ama kimse konsere gitmek istemiyor, herkes elindeki bileti satmak istiyor (arz çok). Fiyat ne olur? Çakılır. Borsa tam olarak budur.",
+              "metadata": {}
+            },
+            {
+              "type": "quiz",
+              "title": "Mini Quiz 3",
+              "order_index": 11,
+              "content": "Piyasa derinliği neyi ifade             "metadata": {
+                "options": [
+                  {"id": "a", "text": "Hisse fiyatının ucuzluğunu"},
+                  {"id": "b", "text": "İşlem hacminin çokluğunu"},
+                  {"id": "c", "text": "Şirketin yaşını"}
+                ],
+                "correct_option_id": "b"
+              }
+            },
+            {
+              "type": "audio",
+              "title": "Sesli Özet",
+              "order_index": 12,
+              "content": null,
+              "metadata": {
+                "text": "Bu adım şu an uygulamada gizli."
+              }
+            },
+            {
+              "quiz",
+              "title": "Fiyat Testi",
+              "order_index": 13,
+              "content": null,
+              "metadata": {
+                "pass_threshold": 7,
+                "questions": [
+                  {"id": "q1", "question": "Fiyatı ne belirler?", "options": [{"id": "a", "text": "Arz ve Talep"}, {"id": "b", "text": "Sadece Borsa yönetimi"}, {"id": "c", "text": "Hükümet"}], "correct_option_id": "a", "explanation": "Arz ve talep piyasayı belirler."},
+                  {"id": "q2", "question": "Talep fazlaysa ne olur?", ons": [{"id": "a", "text": "Fiyat artar"}, {"id": "b", "text": "Fiyat düşer"}, {"id": "c", "text": "Sabit kalır"}], "correct_option_id": "a", "explanation": "Talep çoksa fiyat yükselir."},
+                  {"id": "q3", "question": "Arz fazlaysa ne olur?", "options": [{"id": "a", "text": "Fiyat artar"}, {"id": "b", "text": "Fiyat düşer"}, {"id": "c", "text": "Sabit kalır"}], "correct_option_id": "b", "explanation": "Satıcı çoksa fiyat düşer."},
+                  {"id": "q4", "question": "Borsada psikoloji etkisi?", "options": [{"id": "a", "text": "Yoktur"}, {"id": "b", "text": "Çok yüksektir"}, {"id": "c", "text": "Sadece teknik etki"}], "co": "b", "explanation": "Korku ve açgözlülük etkiler."},
+                  {"id": "q5", "question": "Piyasa derinliği nedir?", "options": [{"id": "a", "text": "Alıcı-satıcı çokluğu"}, {"id": "b", "text": "Fiyatın yüksekliği"}, {"id": "c", "text": "Hisse adı"}], "correct_option_id": "a", "explanation": "Likidite ve işlem yoğunluğudur."},
+                  {"id": "q6"erler fiyatı etkiler mi?", "options": [{"id": "a", "text": "Evet"}, {"id": "b", "text": "Hayır"}, {"id": "c", "text": "Bazen"}], "correct_option_id": "a", "explanation": "Haberler piyasayı yönlendirir."},
+                  {"id": "q7", "question": "Fiyat oluşumunda kim vardır?", "options": [{"id": "a", "text": "Alıcı ve Satıcı"}, {"id": "b", "text": "Sadece aracı kurumlar"}, {"id": "c", "text": "Bilgisayarlar"}], "correc": "a", "explanation": "Piyasanın taraflarıdır."},
+                  {"id": "q8", "question": "Borsa mantıksız olabilir mi?", "options": [{"id": "a", "text": "Evet"}, {"id": "b", "text": "Hayır"}, {"id": "c", "text": "Asla"}], "correct_option_id": "a", "explanation": "Duygular nedeniyle olabilir."},
+                  {"id": "q9", "question": "Gerçekleşen fiyat nedir?", "options": [{"id": "a", "text": "Eşleşen emir"}, {"id": "b", "text": "İstenen fiyat"}, {"id": "c", "text":  "correct_option_id": "a", "explanation": "Alıcı ve satıcının anlaştığıdır."},
+                  {"id": "q10", "question": "Yatırımcı neye odaklanmalı?", "options": [{"id": "a", "text": "Değer"}, {"id": "b", "text": "Sadece fiyat"}, {"id": "c", "text": "Şans"}], "correct_option_id": "a", "explanation": "Fiyat geçici, değer kalıcıdır."}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "lesson_code": "S1D_title": "Boğa ve Ayı Piyasası",
+          "unit_id": 1,
+          "sort_order": 7,
+          "steps": [
+            {
+              "type": "read",
+              "title": "Piyasanın Ruhu",
+              "order_index": 1,
+              "content": "Borsada iki hayvan ismi sıkça duyarsınız: Boğa ve Ayı. Bunlar sadece birer metafor değil, piyasanın ruh halidir. Boğa, yükselişi ve iyimserliği temsil eder. Ayı ise düşüşü ve karamsarlığyasanın hangi 'hayvanda' olduğunu anlamak, stratejinizi belirlemenizi sağlar.",
+              "metadata": {}
+            },
+            {
+              "type": "read",
+              "title": "Boğa Piyasası (Bull Market)",
+              "order_index": 2,
+              "content": "Boğa piyasasında fiyatlar artar, herkes umutludur, ekonomi büyür ve yatırımcılar alım yapmak için isteklidir. Boğa, boynuzlarıyla yukarı vurareltir. Her şeyin iyi gittiği, güvenin yüksek olduğu ve 'yatırımcıların kazandığı' bir dönemdir. Herkesin yüzü güler.",
+              "metadata": {}
+            },
+            {
+              "type": "read",
+              "title": "Ayı Piyasası (Bear Market)",
+              "order_index": 3,
+              "content": "Ayı piyasasında ise tam tersidir. Fiyatlar düşer, korku hakimdir, ekonomik veriler zayıftır. Ayı, pençesiyle aşağı vurarak fiyatları yere serer. Yatırımcılar panik halindedir ve genellikle satış yapıp nakde g ayı piyasası, yeni bir boğa piyasasının hazırlığıdır.",
+              "metadata": {}
+            },
+            {
+              "type": "quiz",
+              "title": "Mini Quiz 1",
+              "order_index": 4,
+              "content": "Boğa piyasası neyi temsil eder?",
+              "metadata": {
+                "options": [
+                  {"id": "a", "text": "Düşüş ve karamsarlık"},
+                  {"id": "b", "text": "Yükseliş ve iyimserlik"},
+                  {"Yatay seyir"}
+                ],
+                "correct_option_id": "b"
+              }
+            },
+            {
+              "type": "read",
+              "title": "Neden Bu İsimler?",
+              "order_index": 5,
+              "content": "İsimlerin kökeni tam olarak bilinmese de yaygın inanış, boğanın saldırırken boynuzlarını yukarı kaldırması (yükseliş), ayının ise pençelerini aşağı doğru indirmesidir (düşüş). Bu basit benzetme, borsanın en temel kuralını özetre çakılır.",
+              "metadata": {}
+            },
+            {
+              "type": "read",
+              "title": "Döngüler",
+              "order_index": 6,
+              "content": "Borsa döngüseldir. Boğa piyasası sonsuza kadar sürmez, tıpkı ayı piyasasının sonsuza kadar sürmediği gibi. Başarılı yatırımcılar, ayı piyasasında fırsat kollayan, boğa piyasasında ise risklerini yönetenlerdir. Asla sadece bir yöne (sadece yükseliş) odaklanıp hazırlıksız yakalanmayın.",
+              "metadata": {}
+            },
+            {
+           le": "Mini Quiz 2",
+              "order_index": 7,
+              "content": "Ayı piyasasında hangi duygu hakimdir?",
+              "metadata": {
+                "options": [
+                  {"id": "a", "text": "Aşırı güven"},
+                  {"id": "b", "text": "Korku ve karamsarlık"},
+                  {"id": "c", "text": "Heyecan"}
+                ],
+                "correct_option_id": "b"
+              }
+            },
+            {
+              "type": "read",
+              "title": "Özetle",
+              "order_ind              "content": "Boğa yükseltir, Ayı düşürür. Piyasanın dilini anlamak, sizi şaşkınlıktan kurtarır. Her piyasa koşulu bir derstir. Boğa piyasasında 'hisse nasıl seçilir', ayı piyasasında 'nasıl korunulur'u öğrenirsiniz. Şimdi, borsanın en büyük düşmanı veya dostu olan Enflasyona bir göz atalım.",
+              "metadata": {}
+            },
+            {
+              "type": "flashcard",
+              "title": "Boğa ve Ayı",
+              "ordnt": null,
+              "metadata": {
+                "front_text": "Boğa vs Ayı Piyasası",
+                "back_text": "Boğa yükselişi ve iyimserliği; Ayı düşüşü ve karamsarlığı temsil eder."
+              }
+            },
+            {
+              "type": "read",
+              "title": "Senaryo",
+              "order_index": 10,
+              "content": "Trafikte gidiyorsun. Yol açıksa ve herkes hızlı gidiyorsa 'Boğa'dasın. Ama kaza olmuş, herkes durmuş veya geriye doğru gidiyorsa 'Ayı'dasın. Ama unutma, trafik sıkışıklığı bittiğinde yol tekrar açılır. Ayı piyasası da bittiğinde Boğa piyasası başlar.",
+            {
+              "type": "quiz",
+              "title": "Mini Quiz 3",
+              "order_index": 11,
+              "content": "Piyasa döngüleri için ne söylenebilir?",
+              "metadata": {
+                "options": [
+                  {"id": "a", "text": "Döngüler sonsuza kadar sürer"},
+                  {"id": "b", "text": "Döngüler değişkendir"},
+                  {"id": "c", "text": "Sadece boğa döngüsü vardır"}
+ ,
+                "correct_option_id": "b"
+              }
+            },
+            {
+              "type": "audio",
+              "title": "Sesli Özet",
+              "order_index": 12,
+              "content": null,
+              "metadata": {
+                "text": "Bu adım şu an uygulamada gizli."
+              }
+            },
+            {
+              "type": "final_quiz",
+              "title": "Boğa-Ayı Testi",
+              "order_index": 13,
+              "content": null,
+              "metadata": {
+                "pass_threshol,
+                "questions": [
+                  {"id": "q1", "question": "Boğa neyi temsil eder?", "options": [{"id": "a", "text": "Yükseliş"}, {"id": "b", "text": "Düşüş"}, {"id": "c", "text": "Kriz"}], "correct_option_id": "a", "explanation": "Boğa yükselişin sembolüdür."},
+                  {"id": "q2", "question": "Ayı neyi temsil eder?", "options": [{"id": "a", "text": "Yükseliş"}, {"id": "b", "text": "Düşüş"}, {"id": "c", "text": "Durgunluk"}], "correct_option_id": "b", "explanation": "Ayı düşüşün sembolüdür."},
+                  {"id": "q3", "question": "Ayı piyasasında ne olur?", "options": [{"id": "a", "text": "Fiyatlar "Fiyatlar artar"}, {"id": "c", "text": "Borsa kapanır"}], "correct_option_id": "a", "explanation": "Ayı düşüş demektir."},
+                  {"id": "q4", "question": "Piyasa neden döngüseldir?", "options": [{"id": "a", "text": "Ekonomik hareketler"}, {"id": "b", "text": "Sadece şans"}, {"id": "c", "text": "Tesadüf"}], "correct_option_id": "a", "explanation": "Ekonominin doğası böyledir."},
+                  {"id": "q5", "question": "Yatırımcı ne yapmalı?", "options": [{"id": "a", "text": "Sadece boğa beklemeli"}, {"id": "b", "text": "Her duruma hazırlıklı olmalı"}, {yasayı tahmin etmeli"}], "correct_option_id": "b", "explanation": "Hazırlıklı olmak esastır."},
+                  {"id": "q6", "question": "Korku hangi piyasada hakimdir?", "options": [{"id": "a", "text": "Boğa"}, {"id": "b", "text": "Ayı"}, {"id": "c", "text": "Yoktur"}], "correct_option_id": "b", "explanation": "Ayı piyasası korkutucudur."},
+                  {"id": "q7", "question": "Boğa piyasasında ne olur?", "options": [{"id": "a", "text": "İyimserlik"}, {"idt": "Panik"}, {"id": "c", "text": "Satış"}], "correct_option_id": "a", "explanation": "İyimserlik hakimdir."},
+                  {"id": "q8", "question": "Ayı piyasası sonsuz mu?", "options": [{"id": "a", "text": "Evet"}, {"id": "b", "text": "Hayır"}, {"id": "c", "text": "Bilinmez"}], "correct_option_id": "b", "explanation": "Geçicidir."},
+                  {"id": "q9", "question": "Başarılı yatırımcı ayı piyasasında ne yapar?", "options": [{"": "Fırsat kollar"}, {"id": "b", "text": "Hepsini satar"}, {"id": "c", "text": "Görmezden gelir"}], "correct_option_id": "a", "explanation": "Fırsatları değerlendirir."},
+                  {"id": "q10", "question": "Metaforlar neyi anlatır?", "options": [{"id": "a", "text": "Piyasa ruhunu"}, {"id": "b", "text": "Hayvanları"}, {"id": "c", "text": "Hisse adlarını"}], "correct_option_id": "a", "explanation": "Piyasnü temsil eder."}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "lesson_code": "S1D8",
+          "lesson_title": "Enflasyon ve Yatırım",
+          "unit_id": 1,
+          "sort_order": 8,
+          "steps": [
+            {
+              "type": "read",
+              "title": "Paranın Gizli Düşmanı",
+              "order_index": 1,
+              "content": "Enflasyon, paranın satın alma gücünün zamanla azalmas0 TL ile aldığınız bir ürün, enflasyon varken yarın 110 TL olur. Paranızı yastık altında veya faizsiz bir hesapta tutmak, aslında her geçen gün fakirleşmek demektir. Yatırım, sadece para kazanmak değil, parayı korumaktır.",
+              "metadata": {}
+            },
+            {
+              "type": "read",
+              "title": "Borsa ve Enflasyon",
+              "order_index": 2,
+              "content": "Borsa, enflasyona karşı en güçlü silahlaraliyetleri arttığında ürünlerinin fiyatını yükselterek enflasyonu müşteriye yansıtır. Yani şirketler değerlenir. Hisse senedi sahibi olduğunuzda, siz de bu fiyat artışından (şirket kârı üzerinden) payınızı alırsınız. Bu, paranızın değerini korumanın bir yoludur.",
+              "metadata": {}
+            },
+            {
+              "type": "read",
+              "title": "Reel Getiri",
+              "order_index": 3,
+              "content": "Yatırımda en önemli kavram 'Reel Getiri'dir. Reel getiri = Nomindan kazandığınız para, enflasyondan yüksekse gerçek anlamda para kazanmışsınızdır. Eğer enflasyon %50 ise ve siz %30 kazandıysanız, aslında paranız reel olarak %20 erimiştir.",
+              "metadata": {}
+            },
+            {
+              "type": "quiz",
+              "title": "Mini Quiz 1",
+              "order_index": 4,
+              "content": "Enflasyon nedir?",
+              "metadata": {
+                "options": [
+                  {"id": "a", "text": "Par"},
+                  {"id": "b", "text": "Paranın alım gücünün azalması"},
+                  {"id": "c", "text": "Borsa düşüşü"}
+                ],
+                "correct_option_id": "b"
+              }
+            },
+            {
+              "type": "read",
+              "title": "Neden Yatırım Yapmalı?",
+              "order_index": 5,
+              "content": "Paranızı nakitte tuttuğunuzda enflasyon onu yavaşça eritir. Yatırım yaptığe koyarsınız'. Bir şirkete ortak olduğunuzda, o şirket sizin için çalışır. Enflasyon yükselse bile, o şirket varlıklarıyla, stoklarıyla ve üretimiyle kendini korur. Yatırım, bir savunma mekanizmasıdır.",
+              "metadata": {}
+            },
+            {
+              "type": "read",
+              "title": "Zamanın Önemi",
+              "order_index": 6,
+              "content": "Enflasyon, zamanla birikimli olarak zarar verir. Bugün atıl duran 100 TL, yıllar sonra çok daha değersiz olacaktır. 'Ben daha sonra yatırım yaparım' demek, enflasyona 'paramı datırıma erkenden başlamak, enflasyon karşısında en büyük avantajınızdır.",
+              "metadata": {}
+            },
+            {
+              "type": "quiz",
+              "title": "Mini Quiz 2",
+              "order_index": 7,
+              "content": "Reel getiri nasıl hesaplanır?",
+              "metadata": {
+                "options": [
+                  {"id": "a", "text": "Getiri + Enflasyon"},
+                  {"id": "b", "text": "Getiri - Enflasyon"},
+                  {"id": "c", "t getiri"}
+                ],
+                "correct_option_id": "b"
+              }
+            },
+            {
+              "type": "read",
+              "title": "Özetle",
+              "order_index": 8,
+              "content": "Enflasyonla mücadele etmek için yatırım zorunluluktur. Borsa, şirketlerin değer üretme yeteneği sayesinde enflasyona karşı koruma sağlar. Artık riskin ne olduğunu öğrenme zamanı. Çünküdir, önemli olan riski anlamaktır.",
+              "metadata": {}
+            },
+            {
+              "type": "flashcard",
+              "title": "Enflasyon",
+              "order_index": 9,
+              "content": null,
+              "metadata": {
+                "front_text": "Enflasyon nedir?",
+                "back_text": "Paranın satın alma gücünün, fiyat artışları nedeniyle zamanla düşmesidir."
+              }
+            },
+            {
+              "type": "read",
+              "title": "Senaryo",
+              "order_index": 10,
+              "contena suyun var (paran). Güneş (enflasyon) sürekli suyu buharlaştırıyor. Eğer kovayı gölgeye koymazsan veya kapağını kapatmazsan su bitecek. Yatırım yapmak, o kovayı gölgeye koymaktır. Suyun (paran) azalmasını durdurmak hatta yeni su eklemektir.",
+              "metadata": {}
+            },
+            {
+              "type": "quiz",
+              "title": "Mini Quiz 3",
+              "order_index": 11,
+              "content": "Borsa neden enflasyona karşı korur?",
+              "metadata": {
+                "options": [
+                  {"id": "a", "text": "Şirketler kendini fiyat art          {"id": "b", "text": "Borsa enflasyonu yasaklar"},
+                  {"id": "c", "text": "Hisse fiyatları hep sabittir"}
+                ],
+                "correct_option_id": "a"
+              }
+            },
+            {
+              "type": "audio",
+              "title": "Sesli Özet",
+              "order_index": 12,
+              "content": null,
+              "metadata": {
+                "text": "Bu adım şu an uygulamada gizli."
+              }
+            },
+            {
+              "type": "final_quiz",
+              "titl"Enflasyon Testi",
+              "order_index": 13,
+              "content": null,
+              "metadata": {
+                "pass_threshold": 7,
+                "questions": [
+                  {"id": "q1", "question": "Enflasyon parayı ne yapar?", "options": [{"id": "a", "text": "Değerli kılar"}, {"id": "b", "text": "Eritir"}, {"id": "c", "text": "Çoğaltır"}], "correct_option_id": "b", "explanation": "Alım gücünü azaltır."},
+                  {"id": "q2", "question": "Yatırım neden gereklidir?", "options": [{"id": "a", "text": "Zengin olmak için"}, {"id": "b", "text": "Enflasyona karşı korumak"text": "Eğlenmek için"}], "correct_option_id": "b", "explanation": "Değer korumak esastır."},
+                  {"id": "q3", "question": "Reel getiri nedir?", "options": [{"id": "a", "text": "Net kazanç"}, {"id": "b", "text": "Brüt kazanç"}, {"id": "c", "text": "Şans"}], "correct_option_id": "a", "explanation": "Enflasyondan arınmış kazançtır."},
+                  {"id": "q4", "question": "Şirketler enflasyonu ne yapar?", "options": [{"id": "a", "text": "Yansıtır"}, {"id": "b", "text": "Yasaklar"}, {"id": "c", "text": "Yok sayar"}], "correct_option_id": "a", "explanation": "Fiyat artışı ile yansıtır."},
+                  {"id": "q5", "question": "Nakit tutmak nedir? "a", "text": "Enflasyona teslim olmak"}, {"id": "b", "text": "En güvenlisi"}, {"id": "c", "text": "Doğru strateji"}], "correct_option_id": "a", "explanation": "Alım gücü erir."},
+                  {"id": "q6", "question": "Yatırımın amacı sadece kazanmak mıdır?", "options": [{"id": "a", "text": "Hayır, korumaktır"}, {"id": "b", "text": "Ev"c", "text": "Bilmem"}], "correct_option_id": "a", "explanation": "Koruma ve büyümedir."},
+                  {"id": "q7", "question": "Enflasyon yüksekse ne gerekir?", "options": [{"id": "a", "text": "Daha çok yatırım"}, {"id": "b", "text": "Hiçbir şey"}, {"id": "c", "text": "Sadece harcama"}], "correct_option_id": "a", "explanation": "Hızlı aksiyon gerekir."},
+                  {"id": "q8", "question": "Borsa ne sağlar?", "options": [{"id": "a", "text": "Güvenli liman"}, {"id": ""Savunma mekanizması"}, {"id": "c", "text": "Hızlı zenginlik"}], "correct_option_id": "b", "explanation": "Savunma sağlar."},
+                  {"id": "q9", "question": "Hangi getiri daha gerçektir?", "options": [{"id": "a", "text": "Reel"}, {"id": "b", "text": "Nominal"}, {"id": "c", "text": "Tahmini"}], "correct_option_id": "a", "explanation": "Reel getiri enflasyondan arındırılmış olandır."},
+                  {"id": "q10", "question": "Yatırıma ne zaman bations": [{"id": "a", "text": "Erken"}, {"id": "b", "text": "Geç"}, {"id": "c", "text": "Hiç"}], "correct_option_id": "a", "explanation": "Zaman kaybetmemek gerekir."}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "lesson_code": "S1D9",
+          "lesson_title": "Risk Nedir?",
+          "unit_id": 1,
+          "sort_order": 9,
+        "steps": [
+            {
+              "type": "read",
+              "title": "Risksiz Yatırım Yoktur",
+              "order_index": 1,
+              "content": "Borsada 'asla kaybetmeyeceğiniz' bir yöntem yoktur. Risk, yatırımın doğasında vardır. Risk, öngörülemeyen durumların gerçekleşme ihtimalidir. İyi yatırımcı, 'riski yok eden' değil, 'riski yöneten' kişidir. Riski yönetmek için onu anlamalı ve sınırlarını bilmelisiniz.",
+              "metadata": {
+              "type": "read",
+              "title": "Risk Türleri",
+              "order_index": 2,
+              "content": "İki ana risk vardır: Sistemik risk ve Şirket riski. Sistemik risk; savaş, küresel kriz, büyük afetler gibi tüm borsayı etkileyen durumlardır. Şirket riski ise; şirketin kötü yönetilmesi, iflası veya sektörünün bozulmasıdır. Yatırımcı, şirket riskini seçtiği hisseleri çeşitlendirerek azaltabilir.",
+              "           {
+              "type": "read",
+              "title": "Çeşitlendirme (Diversification)",
+              "order_index": 3,
+              "content": "Tüm yumurtaları aynı sepete koymayın! Eğer tek bir şirkete tüm paranızı yatırırsanız, o şirket battığında paranız da gider. Ama 10 farklı sektörden şirket alırsanız, birinin kötü gitmesi diğerinin iyi gitmesiyle dengelenir. Buna 'çeşitlendirme' denir ve risk yönetiminin altın kuralıdır.",
+              "metadata": {}
+            },
+            {
+           "title": "Mini Quiz 1",
+              "order_index": 4,
+              "content": "Risk nedir?",
+              "metadata": {
+                "options": [
+                  {"id": "a", "text": "Kayıp garantisi"},
+                  {"id": "b", "text": "Öngörülemeyen sonuç ihtimali"},
+                  {"id": "c", "text": "Borsanın kapanması"}
+                ],
+             rect_option_id": "b"
+              }
+            },
+            {
+              "type": "read",
+              "title": "Risk vs Getiri İlişkisi",
+              "order_index": 5,
+              "content": "Borsada kural basittir: Yüksek getiri beklentisi, yüksek risk taşır. Düşük riskli hisseler genelde daha istikrarlı ama yavaş büyür. Yeni yatırımcılar için risk-getiri dengesini kurmak çok önemlidir. Kendinize şu soruyu sorun: 'Bu parayı kaybedersem hayat kalitem ne kad          "metadata": {}
+            },
+            {
+              "type": "read",
+              "title": "Psikolojik Risk",
+              "order_index": 6,
+              "content": "En büyük risk genellikle dışarıda değil, içimizdedir: Korku ve açgözlülük. Fiyatlar düşünce korkup satan veya yükselince açgözlülükle tepeden alan yatırımcı, kendi riskini yaratır. Disiplinli bir sistem kurmak, bu duygusal riskleri azaltır.",
+              "metadata": {}
+            },
+            {
+    ,
+              "title": "Mini Quiz 2",
+              "order_index": 7,
+              "content": "Çeşitlendirme ne işe yarar?",
+              "metadata": {
+                "options": [
+                  {"id": "a", "text": "Riske odaklanır"},
+                  {"id": "b", "text": "Riski azaltır"},
+                  {"id": "c", "text": "Getiriyi yok eder"}
+                ],
+                "correct_option_id": "b"
+              }
+                      {
+              "type": "read",
+              "title": "Özetle",
+              "order_index": 8,
+              "content": "Risksiz getiri yoktur, sadece iyi yönetilen risk vardır. Çeşitlendirin, araştırın ve duygularınıza hakim olun. Yatırım bir maratondur, depar değil. Artık teoriyi öğrendiniz, bir sonraki derste ilk adımı atmaya (hazırlığa) odaklanacağız.",
+              "metadata": {}
+            },
+            {
+              "type": "flashcard",
+             i",
+              "order_index": 9,
+              "content": null,
+              "metadata": {
+                "front_text": "Çeşitlendirme nedir?",
+                "back_text": "Yatırımı tek bir varlık yerine farklı sektörlere bölerek riski azaltma yöntemidir."
+              }
+            },
+            {
+              "type": "read",
+              "title": "Senaryo",
+              "order_index": 10,
+              "content": "Denize açılıyorsun (Borsa). Risk, dalgalardır. Dalgaları yok edemezsin. Ama iyi bir tekne seçebilir, can yeleği giyebilir (çeşitlendirme) ve fırtına çıktığında ne yapacağını bilirsen (plan), güvenle kmayı değil, hazırlıksız olmayı ifade eder.",
+              "metadata": {}
+            },
+            {
+              "type": "quiz",
+              "title": "Mini Quiz 3",
+              "order_index": 11,
+              "content": "Hangisi en büyük psikolojik risktir?",
+              "metadata": {
+                "options": [
+                  {"id": "a", "text": "Korku ve açgözlülük"},
+                  {"id": "b", "text": "Çok para olması"},
+                  {"id": "c", "text": "Sist              ],
+                "correct_option_id": "a"
+              }
+            },
+            {
+              "type": "audio",
+              "title": "Sesli Özet",
+              "order_index": 12,
+              "content": null,
+              "metadata": {
+                "text": "Bu adım şu an uygulamada gizli."
+              }
+            },
+            {
+              "type": "final_quiz",
+              "title": "Risk Testi",
+              "order_index": 13,
+              "content": null,
+              "metadata": {
+               ass_threshold": 7,
+                "questions": [
+                  {"id": "q1", "question": "Risksiz yatırım var mı?", "options": [{"id": "a", "text": "Evet"}, {"id": "b", "text": "Hayır"}, {"id": "c", "text": "Sadece nakitte"}], "correct_option_id": "b", "explanation": "Yatırımın doğası gereği risk vardır."},
+                  {"id": "q2", "question": "Risk nedir?", "options": [{"id": "a", "text": "Kaybetme ihtimali"}, {"id": "b", "text": "Zenginlik"}, {"id": "c", "text": "Sabır"}], "correct_option_id": "a", "explanation": "Belirsizliğin gerçekleşme ihtimalidir."},
+                  {"id": "q3", "question": "Çeşitlendirme nedir?", "options": [{"id"iski bölmek"}, {"id": "b", "text": "Riski artırmak"}, {"id": "c", "text": "Şans"}, "correct_option_id": "a", "explanation": "Riski azaltma yöntemidir."}], "correct_option_id": "a", "explanation": "Yumurtaları farklı sepete koymaktır."},
+                  {"id": "q4", "question": "Sistemik risk nedir?", "options": [{"id": "a", "text": "Tüm piyasayı etkileyen"}, {"id": "b", "text": "Sadece bir şirket"}, {"id": "c", "text": "Bireysel hata"}], "correct_option_id": "a", "explanation": "Genel piyasa riskidir."},
+                  {"id": "q5", "question": "Yatırımcı neyi yönetir?", "options": [{"id": "a", "text": "Piyasayı"}, {"id""Riski"}, {"id": "c", "text": "Şirketi"}], "correct_option_id": "b", "explanation": "Riski yönetmelidir."},
+                  {"id": "q6", "question": "Yüksek getiri beklentisi?", "options": [{"id": "a", "text": "Yüksek risk getirir"}, {"id": "b", "text": "Garanti kazanç"}, {"id", "text": "Rissizdir"}], "correct_option_id": "a", "explanation": "Risk ve getiri dengelidir."},
+                  {"id": "q7", "question": "En büyük düşman nedir?", "options": [{"id": "a", "text": "Duygular"}, {"id": "b", "text": "Haberler"}, {"id": "c", "text": "Borsa"}], "correct_option_id": "a", "explanation": "Duygusal hatalar."},
+                  {"id": "q8", "question": "Planlama riski azaltır mı?", "options": [{"id": "a", "text": "Evet"}, {"id": "b", "text": "Hayır"}, {"id": "c", "text": }], "correct_option_id": "a", "explanation": "Planlama güven verir."},
+                  {"id": "q9", "question": "Şirket riski nedir?", "options": [{"id": "a", "text": "Şirkete özel sorunlar"}, {"id": "b", "text": "Dünya krizi"}, {"id": "c", "text": "Enflasyon"}], "correct_option_id": "a", "explanation": "Şirketin kendi yönetimi ile ilgilidir."},
+                  {"id": "q10", "question": "Yatırım bir nevidir?", "optiid": "a", "text": "Maraton"}, {"id": "b", "text": "Depar"}, {"id": "c", "text": "Şans"}], "correct_option_id": "a", "explanation": "Uzun soluklu bir süreçtir."}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "lesson_code": "S1D10",
+          "lesson_title": "İlk Adımı Atmak",
+          "unit_id": 1,
+          "sort_orde,
+          "steps": [
+            {
+              "type": "read",
+              "title": "Hazırlık Süreci",
+              "order_index": 1,
+              "content": "Bu seviyeye kadar teorik altyapıyı tamamladınız. Artık bir yatırımcının zihniyetine sahipsiniz. İlk adımı atmadan önce yapmanız gereken tek şey, disiplinli bir plan oluşturmaktır. Borsaya girerken 'rastgele' değil, 'planlı' olmalısınız. Hazırlık, başarının yarısıdır.",
+              "metadata": {}
+            },
+          
+              "title": "Acil Durum Fonu",
+              "order_index": 2,
+              "content": "Borsaya asla tüm paranızla girmeyin. Her zaman bir 'acil durum fonunuz' olmalı. Ani bir hastalık veya ihtiyaç anında hisselerinizi zararına satmak zorunda kalmamalısınız. Yatırım, 'ihtiyacınız olmayan' para ile yapılır. Bu, sizi duygusal kararlardan korur.",
+              "metadata": {}
+            },
+            {
+              "type": "read",
+              "title": "Hedef Belirleme",
+              "order_index    "content": "Neden yatırım yapıyorsunuz? Ev almak için mi, emeklilik için mi, yoksa sadece öğrenmek için mi? Hedefiniz yoksa, yönünüzü bulamazsınız. Kısa vadeli hedeflerle uzun vadeli yatırım stratejileri çok farklıdır. Hedefinizi belirleyin ve bu hedefe uygun bir yol haritası çizin.",
+              "metadata": {}
+            },
+            {
+              "type": "quiz",
+              "title"         "order_index": 4,
+              "content": "Borsaya hangi parayla girilmelidir?",
+              "metadata": {
+                "options": [
+                  {"id": "a", "text": "Borç parayla"},
+                  {"id": "b", "text": "İhtiyaç duymadığınız parayla"},
+                  {"id": "c", "text": "Tüm birikiminizle"}
+                ],
+                "correct_option_id": "b"
+              }
+            },
+            {
+              "type": "read",
+              "title": "Eğitim Devam Ediyor",
+      order_index": 5,
+              "content": "Çırak seviyesini başarıyla bitirdiniz! Artık borsanın ne olduğunu, hisse senedinin mantığını, piyasa dilini ve enflasyon riskini biliyorsunuz. Çaylak seviyesine geçmeye hazırsınız. Çaylak seviyesinde, nasıl hesap açacağınızı ve ilk emirlerinizi nasıl vereceğinizi öğreneceğiz. Öğrenme yolculuğu yeni başlıyor.",
+              "metadata": {}
+            },
+            {
+              "type": "read",
+              "title": "Disiplin",
+              "order_index": 6,
+siye: Disiplin. Borsa bir yetenek yarışı değil, bir sabır ve disiplin yarışıdır. Planınıza sadık kalın, duygularınızı kontrol edin ve sürekli öğrenin. Siz artık bu yolun bir parçasısınız. Hazır olduğunuzda ikinci seviyeye geçin ve uygulamaya başlayın.",
+              "metadata": {}
+            },
+            {
+              "type": "quiz",
+              "title": "Mini Quiz 2",
+              "order_index": 7,
+              "content": "Birinci seviyenin en önemli kazanımı nedir?",
+              "metadata": {
+                "options": [
+                  {"id": "a", "text": "Hızlı para kazanmak"},
+  : "Temel kavramları ve zihniyeti anlamak"},
+                  {"id": "c", "text": "Tüm hisseleri bilmek"}
+                ],
+                "correct_option_id": "b"
+              }
+            },
+                          "type": "read",
+              "title": "Özetle",
+              "order_index": 8,
+              "content": "Hazırlık, plan ve disiplin. Borsanın temel üçlüsü budur. Çıraklık dönemini bitirdiniz. Şimdi uygulamalı bilgilere geçme vakti. Kendinize güvenin, çünkü artık yatırımcı dilini konuşuyorsunuz. Başarılar dileriz!",
+              "metadata": {}
+            },
+            {
+              "type": "flashcard",
+  rımcı Hazırlığı",
+              "order_index": 9,
+              "content": null,
+              "metadata": {
+                "front_text": "Yatırımın ilk kuralı nedir?",
+                "back_text": "İhtiyaç duymadığınız parayla yatırım yapmak ve planlı hareket etmektir."
+              }
+            },
+            {
+              "type": "read",
+              "title": "Senaryo",
+              "order_index": 10,
+              "content": "Bir dağa tırmanmadan önce kamp kurarsın, haritana bakarsın ve ekipmanlarını kontrol edersin. İlk seviye (Çırak), dağın etekleridir. Teoriyi öğrendin. Şimdi ikinci seviyede (Çaylak), tırmanış ekzır mısın?",
+              "metadata": {}
+            },
+            {
+              "type": "quiz",
+              "title": "Mini Quiz 3",
+              "order_index": 11,
+              "content": "Başarı için ne gerekir?",
+              "metadata": {
+                "options": [
+                  {"id": "a", "text": "Sürekli öğrenme ve disiplin"},
+                  {"id": "b", "text": "Şanslı olmak"},
+                  {"id": "c", "text": "Çok fazla işlem yapmak"}
+                ],
+                "correct_option_id": "a"
+               },
+            {
+              "type": "audio",
+              "title": "Sesli Özet",
+              "order_index": 12,
+              "content": null,
+              "metadata": {
+                "text": "Bu adım şu an uygulamada gizli."
+              }
+            },
+            {
+              "type": "final_quiz",
+              "title": "Genel Bilgi Testi",
+              "order_index": 13,
+              "content": null,
+              "metadata": {
+                "pass_threshold": 7,
+                "questions": [
+                  {"id": "q1", "question": "Borsa nedir?", "ions": [{"id": "a", "text": "Hisse pazarı"}, {"id": "b", "text": "Bankacılık"}, {"id": "c", "text": "Oyun"}], "correct_option_id": "a", "explanation": "Hisse senedi pazarıdır."},
+                  {"id": "q2", "question": "Hissedar olmak nedir?", "options": [{"id": "a", "text": "Ortaklık"}, {"id": "b", "text": "Kira"}, {"id": "c", "text": "Borç"}], "correct_option_id": "a", "explanation": "Şirkete ortaklıktır."},
+                  {"id": "q3", "question": "Yatırımcı neye odaklanır?", "options": [{"id": "a", "text": "Uzun vade"}, {"id": "b", "text": "Kısa vade"}, {"id": "c", "text": "Tüyo"}], "correct_option_id": "a", "explanation": "Uzun vadeli değer."},
+           ", "question": "Enflasyon parayı ne yapar?", "options": [{"id": "a", "text": "Eritir"}, {"id": "b", "text": "Büyütür"}, {"id": "c", "text": "Sabit tutar"}], "correct_option_id": "a", "explanation": "Alım gücünü azaltır."},
+                  {"id": "q5", "question": "Boğa neyi temsil eder?", "options": [{"id": "a", "text": "Yükseliş"}, {"id": "b", "text": "Düşüş"}, {"id": "c", "text": "Kriz"}], "correct_option_id": "a", "explanation": "İyimserlik ve yükseliş."},
+                  {"id": Ayı neyi temsil eder?", "options": [{"id": "a", "text": "Düşüş"}, {"id": "b", "text": "Yükseliş"}, {"id": "c", "text": "İyimserlik"}], "correct_option_id": "a", "explanation": "Karamsarlık ve düşüş."},
+                  {"id": "q7", "question": "Çeşitlendirme neyi azaltır?", "options": [{"id": "a", "text": "Riski"}, {"id": "b", "text": "Kazancı"}, {"id": "c", "text": "Zamanı"}], "correct_option_id": "a", "explanation": "Riski minimize eder."},
+                  {"in": "Acil durum fonu nedir?", "options": [{"id": "a", "text": "Kenardaki para"}, {"id": "b", "text": "Yatırım parası"}, {"id": "c", "text": "Kredi"}], "correct_option_id": "a", "explanation": "İhtiyaç anında kullanılır."},
+                  {"id": "q9", "question": "Hedef neden önemlidir?", "options": [{"id": "a", "text": "Yön bulmak için"}, {"id": "b", "text": "Zengin olmak için"}, {"id": "c", "text": "Gereksizdir"}], "correct_option_id": "a", "explanation": "Strateji iç,
+                  {"id": "q10", "question": "Yatırımcı disiplinli midir?", "options": [{"id": "a", "text": "Evet"}, {"id": "b", "text": "Hayır"}, {"id": "c", "text": "Bazen"}], "correct_option_id": "a", "explanation": "Disiplin başarının şartıdır."}
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

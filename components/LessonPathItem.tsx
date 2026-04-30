@@ -27,6 +27,7 @@ type LessonPathItemProps = {
   totalLessons: number;
   status: 'LOCKED' | 'ACTIVE' | 'COMPLETED';
   onPress: (lesson: Lesson) => void;
+  hideActiveBadge?: boolean;
 };
 
 export default function LessonPathItem({
@@ -35,6 +36,7 @@ export default function LessonPathItem({
   totalLessons,
   status,
   onPress,
+  hideActiveBadge = false,
 }: LessonPathItemProps) {
   const isLast = index === totalLessons - 1;
   const isLocked = status === 'LOCKED';
@@ -105,7 +107,7 @@ export default function LessonPathItem({
       >
         <View style={styles.lessonContent}>
           <View style={styles.textContainer}>
-            {status === 'ACTIVE' && (
+            {status === 'ACTIVE' && !hideActiveBadge && (
               <View style={styles.nextLessonBadge}>
                 <Text style={styles.nextLessonBadgeText}>Aktif Ders</Text>
               </View>

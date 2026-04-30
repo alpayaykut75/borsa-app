@@ -17,6 +17,7 @@ import type { CompositeScreenProps } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { supabase } from '../lib/supabase';
+import { isLevelExamPassed } from '../lib/runtimeProgress';
 import type { HomeStackParamList, RootStackParamList } from '../App';
 import LessonPathItem from '../components/LessonPathItem';
 import { useSfx } from '../src/hooks/useSfx';
@@ -33,6 +34,20 @@ type Lesson = {
   order_index?: number;
   icon_name?: string;
 };
+type LevelExamItem = {
+  id: string;
+  title: string;
+  description?: string;
+  type: 'LEVEL_EXAM';
+};
+type LessonListItem = Lesson | LevelExamItem;
+
+const normalizeTr = (text: string) =>
+  text
+    .replace(/Gecis/g, 'Geçiş')
+    .replace(/Sinavi/g, 'Sınavı')
+    .replace(/Sinav/g, 'Sınav')
+    .replace(/seviye/g, 'Seviye');
 
 const palette = {
   background: '#000000',
@@ -63,11 +78,14 @@ const getLevelHeaderImage = (unitTitle?: string, unitId?: number) => {
 };
 
 export default function UnitDetailScreen({ route, navigation }: Props) {
-  const { unitId, unitTitle } = route.params;
+  const { unitId, unitTitle, levelExamPassed = false } = route.params;
+  const [runtimeExamPassed, setRuntimeExamPassed] = useState(isLevelExamPassed(unitId));
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [completedLessonIds, setCompletedLessonIds] = useState<Set<number>>(new Set());
+  const [hasLevelExam, setHasLevelExam] = useState(false);
+  const [levelExamTitle, setLevelExamTitle] = useState('Seviye Geçiş Sınavı');
   const { playSound } = useSfx();
 
   const handleBackPress = () => {
@@ -112,6 +130,34 @@ export default function UnitDetailScreen({ route, navigation }: Props) {
     fetchLessons();
   }, [fetchLessons]);
 
+  useEffect(() => {
+    if (levelExamPassed) {
+      setRuntimeExamPassed(true);
+    }
+  }, [levelExamPassed]);
+
+  useEffect(() => {
+    (async () => {
+      const levelCode = `S${unitId}`;
+      const { data } = await supabase
+        .from('level_exams')
+        .select('id, title')
+        .eq('level_code', levelCode)
+        .eq('is_active', true)
+        .limit(1)
+        .maybeSingle();
+
+      if (data?.id) {
+        setHasLevelExam(true);
+        setLevelExamTitle(normalizeTr(data.title || 'Seviye Geçiş Sınavı'));
+      } else {
+        // Her seviyede listenin sonunda standart geçiş sınavı kartı görünsün.
+        setHasLevelExam(true);
+        setLevelExamTitle(`Seviye ${unitId} Geçiş Sınavı`);
+      }
+    })();
+  }, [unitId]);
+
   // Kullanıcının tamamladığı dersleri çek
   const fetchCompletedLessons = useCallback(async () => {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -148,9 +194,18 @@ export default function UnitDetailScreen({ route, navigation }: Props) {
     const index = lessons.findIndex((l) => l.id === lesson.id);
     const status = getLessonStatus(index, lesson.id);
 
-    // If lesson is newly unlocked (i.e., not completed and currently ACTIVE), play unlock SFX
-    if (status === 'ACTIVE' && !completedLessonIds.has(lesson.id)) {
-      playSound('unlock');
+    if (status !== 'LOCKED') {
+      playSound('correct', { volume: 0.22, maxDurationMs: 200 });
+      setTimeout(() => {
+        navigation.navigate('Lesson', {
+          lessonId: lesson.id,
+          lessonTitle: lesson.title,
+          unitId: unitId,
+          unitTitle: unitTitle,
+          entryStatus: status,
+        });
+      }, 60);
+      return;
     }
 
     navigation.navigate('Lesson', {
@@ -158,7 +213,19 @@ export default function UnitDetailScreen({ route, navigation }: Props) {
       lessonTitle: lesson.title,
       unitId: unitId,
       unitTitle: unitTitle,
+      entryStatus: status,
     });
+  };
+
+  const handleLevelExamPress = () => {
+    if (!areAllLessonsCompleted) return;
+    playSound('correct', { volume: 0.22, maxDurationMs: 200 });
+    setTimeout(() => {
+      navigation.navigate('LevelExam', {
+        unitId,
+        unitTitle,
+      });
+    }, 60);
   };
 
   const getLessonStatus = (index: number, lessonId: number): 'LOCKED' | 'ACTIVE' | 'COMPLETED' => {
@@ -181,23 +248,60 @@ export default function UnitDetailScreen({ route, navigation }: Props) {
     return 'LOCKED';
   };
 
-  const renderLessonItem = ({ item, index }: { item: Lesson; index: number }) => {
-    const status = getLessonStatus(index, item.id);
-    
+  const areAllLessonsCompleted = lessons.length > 0 && lessons.every((lesson) => completedLessonIds.has(lesson.id));
+  const listItems: LessonListItem[] = hasLevelExam
+    ? [
+        ...lessons,
+        {
+          id: `level-exam-${unitId}`,
+          title: normalizeTr(levelExamTitle),
+          description: 'Bir üst seviyeye geçiş için hazır mısın?',
+          type: 'LEVEL_EXAM',
+        },
+      ]
+    : lessons;
+
+  const renderItem = ({ item, index }: { item: LessonListItem; index: number }) => {
+    if ('type' in item && item.type === 'LEVEL_EXAM') {
+      const examStatus: 'LOCKED' | 'ACTIVE' | 'COMPLETED' = (levelExamPassed || runtimeExamPassed)
+        ? 'COMPLETED'
+        : areAllLessonsCompleted
+          ? 'ACTIVE'
+          : 'LOCKED';
+      return (
+        <LessonPathItem
+          lesson={{
+            id: -unitId,
+            title: item.title,
+            description: item.description,
+          }}
+          index={index}
+          totalLessons={listItems.length}
+          status={examStatus}
+          onPress={() => handleLevelExamPress()}
+          hideActiveBadge
+        />
+      );
+    }
+
+    const lesson = item as Lesson;
+    const status = getLessonStatus(index, lesson.id);
     return (
       <LessonPathItem
-        lesson={item}
+        lesson={lesson}
         index={index}
-        totalLessons={lessons.length}
+        totalLessons={listItems.length}
         status={status}
         onPress={handleLessonPress}
       />
     );
   };
 
-  // Calculate completion percentage
-  const completedCount = lessons.filter(lesson => completedLessonIds.has(lesson.id)).length;
-  const totalCount = lessons.length;
+  // Calculate completion percentage (dersler + seviye gecis sinavi)
+  const completedLessonsCount = lessons.filter((lesson) => completedLessonIds.has(lesson.id)).length;
+  const completedExamCount = hasLevelExam && (levelExamPassed || runtimeExamPassed) ? 1 : 0;
+  const completedCount = completedLessonsCount + completedExamCount;
+  const totalCount = listItems.length;
   const completionPercentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
   const currentStep = totalCount > 0 ? Math.min(completedCount + 1, totalCount) : 1;
   const levelHeaderImage = getLevelHeaderImage(unitTitle, unitId);
@@ -233,10 +337,10 @@ export default function UnitDetailScreen({ route, navigation }: Props) {
 
     return (
       <FlatList
-        data={lessons}
+        data={listItems}
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.listContent}
-        renderItem={renderLessonItem}
+        renderItem={renderItem}
         showsVerticalScrollIndicator={false}
       />
     );

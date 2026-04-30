@@ -11,16 +11,32 @@ export const SFX_MAP = {
 } as const;
 
 type SfxKey = keyof typeof SFX_MAP;
+type PlaySoundOptions = {
+  volume?: number;
+  maxDurationMs?: number;
+};
+
 const SFX_ENABLED_STORAGE_KEY = 'moono_sfx_enabled';
+const SFX_VOLUME_MAP: Record<SfxKey, number> = {
+  correct: 0.55,
+  error: 0.5,
+  unlock: 0.45,
+  complete: 0.6,
+};
+
 let sfxEnabledGlobal = true;
 const sfxSubscribers = new Set<(enabled: boolean) => void>();
+const sharedSounds: Partial<Record<SfxKey, Audio.Sound>> = {};
+const stopTimeouts: Partial<Record<SfxKey, ReturnType<typeof setTimeout>>> = {};
+let isSfxInitialized = false;
+let sfxInitPromise: Promise<void> | null = null;
 
 const notifySfxSubscribers = (enabled: boolean) => {
   sfxSubscribers.forEach((callback) => callback(enabled));
 };
 
 export function useSfx() {
-  const soundsRef = useRef<Partial<Record<SfxKey, Audio.Sound>>>({});
+  const soundsRef = useRef(sharedSounds);
   const [isSfxEnabled, setIsSfxEnabled] = useState(sfxEnabledGlobal);
 
   useEffect(() => {
@@ -31,9 +47,14 @@ export function useSfx() {
   }, []);
 
   useEffect(() => {
-    let isMounted = true;
-
     const initializeSfx = async () => {
+      if (isSfxInitialized) return;
+      if (sfxInitPromise) {
+        await sfxInitPromise;
+        return;
+      }
+
+      sfxInitPromise = (async () => {
       try {
         const storedValue = await AsyncStorage.getItem(SFX_ENABLED_STORAGE_KEY);
         if (storedValue != null) {
@@ -45,53 +66,44 @@ export function useSfx() {
       }
 
       try {
+        await Audio.setAudioModeAsync({
+          playsInSilentModeIOS: true,
+          staysActiveInBackground: false,
+        });
+
         const entries = Object.entries(SFX_MAP) as [SfxKey, any][];
 
         for (const [key, asset] of entries) {
+          if (sharedSounds[key]) continue;
           try {
             const { sound } = await Audio.Sound.createAsync(asset);
-            if (isMounted) {
-              soundsRef.current[key] = sound;
-            } else {
-              // If unmounted while loading, immediately unload
-              await sound.unloadAsync();
-            }
+            await sound.setVolumeAsync(SFX_VOLUME_MAP[key]);
+            sharedSounds[key] = sound;
           } catch (error) {
             console.warn(`SFX load error for key "${key}":`, error);
           }
         }
+        isSfxInitialized = true;
       } catch (error) {
         console.warn('SFX load error:', error);
       }
+      })();
+
+      await sfxInitPromise;
+      sfxInitPromise = null;
     };
 
     initializeSfx();
-
-    return () => {
-      isMounted = false;
-
-      const unloadAll = async () => {
-        const sounds = Object.values(soundsRef.current).filter(
-          (s): s is Audio.Sound => !!s
-        );
-
-        for (const sound of sounds) {
-          try {
-            await sound.unloadAsync();
-          } catch (error) {
-            console.warn('SFX unload error:', error);
-          }
-        }
-
-        soundsRef.current = {};
-      };
-
-      unloadAll();
-    };
   }, []);
 
-  const playSound = async (key: SfxKey) => {
+  const playSound = async (key: SfxKey, options?: PlaySoundOptions) => {
     if (!sfxEnabledGlobal) return;
+
+    if (!isSfxInitialized) {
+      if (sfxInitPromise) {
+        await sfxInitPromise;
+      }
+    }
 
     const sound = soundsRef.current[key];
     if (!sound) {
@@ -100,9 +112,39 @@ export function useSfx() {
     }
 
     try {
-      // Restart from beginning each time
+      const baseVolume = SFX_VOLUME_MAP[key];
+      const targetVolume = options?.volume ?? baseVolume;
+
+      // Stop current playback to avoid overlap artifacts, then restart.
+      await sound.stopAsync();
+      await sound.setVolumeAsync(targetVolume);
       await sound.setPositionAsync(0);
       await sound.playAsync();
+
+      if (stopTimeouts[key]) {
+        clearTimeout(stopTimeouts[key]);
+      }
+
+      if (options?.maxDurationMs != null && options.maxDurationMs > 0) {
+        stopTimeouts[key] = setTimeout(async () => {
+          try {
+            await sound.stopAsync();
+            await sound.setPositionAsync(0);
+            await sound.setVolumeAsync(baseVolume);
+          } catch {
+            // no-op
+          }
+        }, options.maxDurationMs);
+      } else if (targetVolume !== baseVolume) {
+        // Restore default volume after a short delay.
+        stopTimeouts[key] = setTimeout(async () => {
+          try {
+            await sound.setVolumeAsync(baseVolume);
+          } catch {
+            // no-op
+          }
+        }, 450);
+      }
     } catch (error) {
       console.warn(`SFX play error for key "${key}":`, error);
     }

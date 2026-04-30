@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Image, StyleSheet, Text, View } from 'react-native';
 import { Audio, Video, ResizeMode } from 'expo-av';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type AnimatedSplashProps = {
   onFinish: () => void;
@@ -15,6 +16,7 @@ const BRAND_TEXT = 'MOONO';
 const TYPEWRITER_DURATION = 1000; // 1 second
 const HOLD_DURATION = 3000; // 3.0 seconds (to make total 4.0s)
 const TOTAL_DURATION = TYPEWRITER_DURATION + HOLD_DURATION; // 4.0 seconds total
+const SFX_ENABLED_STORAGE_KEY = 'moono_sfx_enabled';
 // Optional local video support:
 // 1) Put a file like: assets/videos/splash_intro.mp4
 // 2) Replace null with: require('../assets/videos/splash_intro.mp4')
@@ -33,12 +35,21 @@ export default function AnimatedSplash({ onFinish }: AnimatedSplashProps) {
   useEffect(() => {
     const loadAndPlaySound = async () => {
       try {
+        const storedValue = await AsyncStorage.getItem(SFX_ENABLED_STORAGE_KEY);
+        if (storedValue === 'false') return;
+
+        await Audio.setAudioModeAsync({
+          playsInSilentModeIOS: true,
+          staysActiveInBackground: false,
+        });
+
         // Start sound immediately so audio and visual open together.
         const { sound } = await Audio.Sound.createAsync(
           require('../assets/sfx/splash_chime.mp3'),
-          { shouldPlay: true }
+          { shouldPlay: false, volume: 0.65 }
         );
         soundRef.current = sound;
+        await sound.playFromPositionAsync(0);
       } catch (error) {
         console.warn('Error loading splash sound:', error);
       }

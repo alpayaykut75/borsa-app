@@ -54,7 +54,8 @@ export default function UnitPathItem({
 }: UnitPathItemProps) {
   const isLocked = status === 'LOCKED';
   const levelLockedImage = getLevelLockedImage(index);
-  const progress = totalLessons > 0 ? completedLessons / totalLessons : 0;
+  const visibleCompletedLessons = isLocked ? 0 : completedLessons;
+  const progress = totalLessons > 0 ? visibleCompletedLessons / totalLessons : 0;
 
   const handlePress = () => {
     if (!isLocked) {
@@ -111,18 +112,19 @@ export default function UnitPathItem({
           )}
           
           {/* Progress Bar */}
-          {!isLocked && totalLessons > 0 && (
+          {totalLessons > 0 && (
             <View style={styles.progressContainer}>
               <View style={styles.progressBar}>
                 <View 
                   style={[
-                    styles.progressBarFill, 
+                    styles.progressBarFill,
+                    isLocked && styles.progressBarFillLocked,
                     { width: `${progress * 100}%` }
                   ]} 
                 />
               </View>
-              <Text style={styles.progressText}>
-                {completedLessons}/{totalLessons} ders
+              <Text style={[styles.progressText, isLocked && styles.progressTextLocked]}>
+                {visibleCompletedLessons}/{totalLessons} ders
               </Text>
             </View>
           )}
@@ -232,6 +234,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: palette.muted,
     fontWeight: '600',
+  },
+  progressTextLocked: {
+    color: '#7D7D7D',
+  },
+  progressBarFillLocked: {
+    backgroundColor: '#555555',
   },
   arrowContainer: {
     width: 24,

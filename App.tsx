@@ -15,16 +15,33 @@ import UnitDetailScreen from './screens/UnitDetailScreen';
 import AIScreen from './src/screens/AIScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import CompletionScreen from './screens/CompletionScreen';
+import LevelExamScreen from './screens/LevelExamScreen';
 
 export type RootStackParamList = {
   Main: undefined;
-  Lesson: { lessonId: number; lessonTitle?: string; unitId?: number; unitTitle?: string };
-  Completion: { unitId: number; unitTitle: string; isUnitCompleted?: boolean };
+  Lesson: {
+    lessonId: number;
+    lessonTitle?: string;
+    unitId?: number;
+    unitTitle?: string;
+    entryStatus?: 'LOCKED' | 'ACTIVE' | 'COMPLETED';
+  };
+  Completion: {
+    unitId: number;
+    unitTitle: string;
+    isUnitCompleted?: boolean;
+    forceReturnToUnitDetail?: boolean;
+    levelExamPassed?: boolean;
+  };
+  LevelExam: {
+    unitId: number;
+    unitTitle: string;
+  };
 };
 
 export type HomeStackParamList = {
   Home: undefined;
-  UnitDetail: { unitId: number; unitTitle: string };
+  UnitDetail: { unitId: number; unitTitle: string; levelExamPassed?: boolean };
 };
 
 export type MainTabParamList = {
@@ -215,6 +232,13 @@ export default function App() {
           <Stack.Screen
             name="Completion"
             component={CompletionScreen}
+            options={{
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="LevelExam"
+            component={LevelExamScreen}
             options={{
               headerShown: false,
             }}
