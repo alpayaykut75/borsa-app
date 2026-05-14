@@ -42,7 +42,7 @@ export default function LegalScreen({ onClose }: { onClose: () => void }) {
             activeOpacity={0.8}
             onPress={() => setActiveSection(s.key)}
           >
-            <Ionicons name={s.icon as any} size={16} color={activeSection === s.key ? palette.accent : palette.muted} />
+            <Ionicons name={s.icon as any} size={20} color={activeSection === s.key ? palette.accent : palette.muted} />
             <Text style={[styles.tabText, activeSection === s.key && styles.tabTextActive]}>{s.title}</Text>
           </TouchableOpacity>
         ))}
@@ -241,11 +241,11 @@ const styles = StyleSheet.create({
   },
   tab: {
     flex: 1,
-    flexDirection: 'row',
+    flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 4,
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderRadius: 10,
     backgroundColor: palette.card,
     borderWidth: 1,

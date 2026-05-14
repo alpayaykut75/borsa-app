@@ -156,19 +156,21 @@ export default function AnimatedSplash({ onFinish }: AnimatedSplashProps) {
       >
         {SPLASH_VIDEO_SOURCE ? (
           <>
-            <Animated.View style={[styles.splashVideo, { opacity: videoOpacityAnim }]}>
-              <Video
-                source={SPLASH_VIDEO_SOURCE}
-                style={styles.splashVideo}
-                resizeMode={ResizeMode.COVER}
-                shouldPlay
-                isLooping
-                isMuted
-                onReadyForDisplay={() => setIsVideoReady(true)}
-                onError={() => setIsVideoReady(true)}
-              />
-            </Animated.View>
+            <Video
+              source={SPLASH_VIDEO_SOURCE}
+              style={styles.splashVideo}
+              resizeMode={ResizeMode.COVER}
+              shouldPlay
+              isLooping
+              isMuted
+              onReadyForDisplay={() => setIsVideoReady(true)}
+              onError={() => setIsVideoReady(true)}
+            />
             {!isVideoReady && <View style={styles.videoPlaceholder} />}
+            <Animated.View
+              style={[styles.videoPlaceholder, { opacity: videoOpacityAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }) }]}
+              pointerEvents="none"
+            />
           </>
         ) : (
           <Image
