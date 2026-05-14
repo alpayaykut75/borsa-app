@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   ActivityIndicator,
   FlatList,
+  Image,
   SafeAreaView,
   StyleSheet,
   Text,
@@ -45,6 +46,7 @@ const palette = {
   danger: '#EF4444',
 };
 const PROFILE_AVATAR_KEY = 'moono_profile_avatar';
+const PROFILE_PHOTO_KEY = 'moono_profile_photo';
 
 export default function HomeScreen() {
   const navigation = useNavigation<NavigationProp>();
@@ -54,6 +56,7 @@ export default function HomeScreen() {
   const [completedLessonsByUnit, setCompletedLessonsByUnit] = useState<Record<number, number>>({});
   const [totalLessonsByUnit, setTotalLessonsByUnit] = useState<Record<number, number>>({});
   const [profileAvatar, setProfileAvatar] = useState('🙂');
+  const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
   const { playSound } = useSfx();
 
   const fetchUnits = useCallback(async () => {
@@ -85,6 +88,8 @@ export default function HomeScreen() {
         try {
           const savedAvatar = await AsyncStorage.getItem(PROFILE_AVATAR_KEY);
           if (savedAvatar) setProfileAvatar(savedAvatar);
+          const savedPhoto = await AsyncStorage.getItem(PROFILE_PHOTO_KEY);
+          setProfilePhoto(savedPhoto);
         } catch (error) {
           console.warn('Avatar load error:', error);
         }
@@ -223,7 +228,11 @@ export default function HomeScreen() {
       <View style={styles.container}>
         <View style={styles.header}>
           <View style={styles.avatarContainer}>
-            <Text style={styles.avatarEmoji}>{profileAvatar}</Text>
+            {profilePhoto ? (
+              <Image source={{ uri: profilePhoto }} style={styles.avatarPhoto} />
+            ) : (
+              <Text style={styles.avatarEmoji}>{profileAvatar}</Text>
+            )}
           </View>
           <View style={styles.headerTextContainer}>
             <Text style={styles.headerGreeting}>Hoş Geldin Ortak</Text>
@@ -262,9 +271,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: palette.accent,
     backgroundColor: '#0F0F0F',
+    overflow: 'hidden',
   },
   avatarEmoji: {
     fontSize: 28,
+  },
+  avatarPhoto: {
+    width: '100%',
+    height: '100%',
   },
   headerTextContainer: {
     flex: 1,

@@ -1,6 +1,7 @@
 // --- src/screens/AIScreen.tsx ---
 import React, { useState, useCallback, useEffect } from 'react';
 import { View, TextInput, TouchableOpacity, ScrollView, Text, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, Image } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 // @ts-expect-error - @expo/vector-icons type declarations may be missing
 import { Ionicons } from '@expo/vector-icons';
 import { getMoonoResponse } from '../services/MoonoAIService'; // Adım 1'de oluşturulan servis
@@ -25,21 +26,58 @@ const INITIAL_WELCOME_MESSAGE: Message = {
   text: 'Merhaba Ortak! Konulari birlikte sadeleştirelim. Sorunu yaz, adim adim ilerleyelim.',
 };
 
+const MOONO_CHAT_STORAGE_KEY = 'moono_ai_chat_messages';
+
+function isStoredMessageList(data: unknown): data is Message[] {
+  if (!Array.isArray(data) || data.length === 0) return false;
+  return data.every(
+    (item) =>
+      item &&
+      typeof item === 'object' &&
+      typeof (item as Message).id === 'number' &&
+      typeof (item as Message).text === 'string' &&
+      ((item as Message).sender === 'user' || (item as Message).sender === 'moono')
+  );
+}
+
 export default function AIScreen() {
   const [messages, setMessages] = useState<Message[]>([]);
+  const [chatHydrated, setChatHydrated] = useState(false);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isInputFocused, setIsInputFocused] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setMessages([INITIAL_WELCOME_MESSAGE]);
-    }, 300);
-
+    let cancelled = false;
+    (async () => {
+      try {
+        const raw = await AsyncStorage.getItem(MOONO_CHAT_STORAGE_KEY);
+        if (cancelled) return;
+        if (raw) {
+          const parsed: unknown = JSON.parse(raw);
+          if (isStoredMessageList(parsed)) {
+            setMessages(parsed);
+          } else {
+            setMessages([INITIAL_WELCOME_MESSAGE]);
+          }
+        } else {
+          setMessages([INITIAL_WELCOME_MESSAGE]);
+        }
+      } catch {
+        if (!cancelled) setMessages([INITIAL_WELCOME_MESSAGE]);
+      } finally {
+        if (!cancelled) setChatHydrated(true);
+      }
+    })();
     return () => {
-      clearTimeout(timer);
+      cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (!chatHydrated) return;
+    AsyncStorage.setItem(MOONO_CHAT_STORAGE_KEY, JSON.stringify(messages)).catch(() => {});
+  }, [messages, chatHydrated]);
 
   // Gönder butonu tıklandığında çalışır
   const handleSendMessage = useCallback(async () => {
@@ -70,8 +108,8 @@ export default function AIScreen() {
   }, [input, isLoading]);
 
   // Sohbet balonunu render eder
-  const renderMessage = ({ text, sender }: Message) => (
-    <View key={text + sender + Math.random()} style={[
+  const renderMessage = ({ id, text, sender }: Message) => (
+    <View key={String(id)} style={[
       styles.messageBubble,
       sender === 'user' ? styles.userBubble : styles.moonoBubble
     ]}>

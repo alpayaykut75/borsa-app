@@ -37,7 +37,7 @@ const palette = {
 
 const { width: windowWidth } = Dimensions.get('window');
 const flipCardWidth = Math.min(windowWidth - 40, 420);
-const HIDE_AUDIO_STEPS = true;
+const HIDE_AUDIO_STEPS = false;
 
 type LessonStepType = 'read' | 'quiz' | 'flashcard' | 'audio' | 'final_quiz';
 
@@ -196,7 +196,17 @@ export default function LessonScreen({ route, navigation }: Props) {
           metadata: parsedMetadata,
         };
       });
-      setSteps(normalized);
+
+      let lastFinalQuizIndex = -1;
+      normalized.forEach((s, i) => {
+        if (s.type === 'final_quiz') lastFinalQuizIndex = i;
+      });
+      const withoutTrailingAudio =
+        lastFinalQuizIndex >= 0
+          ? normalized.filter((s, i) => !(s.type === 'audio' && i > lastFinalQuizIndex))
+          : normalized;
+
+      setSteps(withoutTrailingAudio);
       setCurrentIndex(0);
       setQuizState({});
       setFinalQuizState({
@@ -349,6 +359,79 @@ export default function LessonScreen({ route, navigation }: Props) {
     });
   };
 
+  const completeLessonAndNavigate = useCallback(async () => {
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      Alert.alert('Hata', 'Kullanıcı bilgisi alınamadı. Lütfen tekrar giriş yapın.');
+      return;
+    }
+
+    const { error: progressError } = await supabase.from('user_progress').upsert(
+      {
+        user_id: user.id,
+        lesson_id: lessonId,
+        is_completed: true,
+      },
+      {
+        onConflict: 'user_id,lesson_id',
+      }
+    );
+
+    if (progressError) {
+      console.warn('İlerleme kaydı hatası:', progressError.message);
+    }
+
+    let isUnitCompleted = false;
+    let hasNextLessonInUnit = false;
+    if (unitId) {
+      const { data: unitLessonsData } = await supabase
+        .from('lessons')
+        .select('id, sort_order')
+        .eq('unit_id', unitId);
+
+      const sortedUnitLessons = [...(unitLessonsData ?? [])].sort(
+        (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
+      );
+      const unitLessonIds = sortedUnitLessons.map((lesson) => lesson.id);
+      const currentLessonIndex = sortedUnitLessons.findIndex((lesson) => lesson.id === lessonId);
+      hasNextLessonInUnit =
+        currentLessonIndex >= 0 && currentLessonIndex < sortedUnitLessons.length - 1;
+
+      if (unitLessonIds.length > 0) {
+        const { data: completedUnitLessonsData } = await supabase
+          .from('user_progress')
+          .select('lesson_id')
+          .eq('user_id', user.id)
+          .eq('is_completed', true)
+          .in('lesson_id', unitLessonIds);
+
+        isUnitCompleted = (completedUnitLessonsData?.length ?? 0) >= unitLessonIds.length;
+      }
+    }
+
+    const forceReturnToUnitDetail = entryStatus === 'COMPLETED' && hasNextLessonInUnit;
+
+    if (unitId && unitTitle) {
+      navigation.replace('Completion', {
+        unitId: unitId,
+        unitTitle: unitTitle,
+        isUnitCompleted,
+        forceReturnToUnitDetail,
+      });
+    } else {
+      navigation.replace('Completion', {
+        unitId: 0,
+        unitTitle: 'Dersler',
+        isUnitCompleted: false,
+        forceReturnToUnitDetail,
+      });
+    }
+  }, [lessonId, unitId, unitTitle, entryStatus, navigation]);
+
   const handleNext = async () => {
     if (!currentStep) return;
 
@@ -405,88 +488,15 @@ export default function LessonScreen({ route, navigation }: Props) {
         });
         return;
       }
+
+      await completeLessonAndNavigate();
+      return;
     }
-    
-    // Son adımdaysa ders tamamlandı
+
+    // Son adımdaysa ders tamamlandı (final_quiz dışındaki son adımlar: okuma, ses vb.)
     if (currentIndex === steps.length - 1) {
-      // Play completion SFX when final step is completed
       playSound('complete');
-      // Kullanıcı ID'sini al
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
-      if (authError || !user) {
-        Alert.alert('Hata', 'Kullanıcı bilgisi alınamadı. Lütfen tekrar giriş yapın.');
-        return;
-      }
-
-      // Supabase'e ilerleme kaydı ekle
-      const { error: progressError } = await supabase
-        .from('user_progress')
-        .upsert(
-          {
-            user_id: user.id,
-            lesson_id: lessonId,
-            is_completed: true,
-          },
-          {
-            onConflict: 'user_id,lesson_id',
-          }
-        );
-
-      // Hata yönetimi: unique constraint hatası (23505) veya diğer hataları görmezden gel
-      if (progressError) {
-        // PostgreSQL unique constraint hatası (23505) veya diğer hataları logla ama devam et
-        console.warn('İlerleme kaydı hatası:', progressError.message);
-        // Kullanıcıya hata göstermeden devam et
-      }
-
-      let isUnitCompleted = false;
-      let hasNextLessonInUnit = false;
-      if (unitId) {
-        const { data: unitLessonsData } = await supabase
-          .from('lessons')
-          .select('id, sort_order')
-          .eq('unit_id', unitId);
-
-        const sortedUnitLessons = [...(unitLessonsData ?? [])].sort(
-          (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
-        );
-        const unitLessonIds = sortedUnitLessons.map((lesson) => lesson.id);
-        const currentLessonIndex = sortedUnitLessons.findIndex((lesson) => lesson.id === lessonId);
-        hasNextLessonInUnit =
-          currentLessonIndex >= 0 && currentLessonIndex < sortedUnitLessons.length - 1;
-
-        if (unitLessonIds.length > 0) {
-          const { data: completedUnitLessonsData } = await supabase
-            .from('user_progress')
-            .select('lesson_id')
-            .eq('user_id', user.id)
-            .eq('is_completed', true)
-            .in('lesson_id', unitLessonIds);
-
-          isUnitCompleted = (completedUnitLessonsData?.length ?? 0) >= unitLessonIds.length;
-        }
-      }
-
-      const forceReturnToUnitDetail = entryStatus === 'COMPLETED' && hasNextLessonInUnit;
-
-      // Başarı ekranına yönlendir (unit bilgisiyle)
-      if (unitId && unitTitle) {
-        navigation.replace('Completion', {
-          unitId: unitId,
-          unitTitle: unitTitle,
-          isUnitCompleted,
-          forceReturnToUnitDetail,
-        });
-      } else {
-        // Fallback: unit bilgisi yoksa sadece Completion'a git
-        navigation.replace('Completion', {
-          unitId: 0,
-          unitTitle: 'Dersler',
-          isUnitCompleted: false,
-          forceReturnToUnitDetail,
-        });
-      }
+      await completeLessonAndNavigate();
       return;
     }
     
@@ -663,86 +673,65 @@ export default function LessonScreen({ route, navigation }: Props) {
     );
   };
 
+  const bindSoundStatus = (sound: Audio.Sound) => {
+    sound.setOnPlaybackStatusUpdate((status) => {
+      if (status.isLoaded) {
+        setAudioState((prev) => ({
+          ...prev,
+          position: status.positionMillis || 0,
+          duration: status.durationMillis || 0,
+          isPlaying: status.isPlaying || false,
+        }));
+        if (status.didJustFinish) {
+          setAudioState((prev) => ({ ...prev, isPlaying: false, position: 0 }));
+        }
+      }
+    });
+  };
+
   const handleAudioPlayPause = async () => {
     const metadata = currentStep?.metadata;
-    // Use metadata.audio_url (new format) with fallback to audioUrl (legacy)
     const audioUrl = metadata?.audio_url || metadata?.audioUrl;
 
     if (!audioUrl) {
-      Alert.alert('Hata', 'Ses dosyası bulunamadı.');
+      Alert.alert('Hata', 'Ses dosyası bulunamadı. Bu adım için metadata.audio_url eklenmeli.');
       return;
     }
 
     try {
       if (audioState.isPlaying && audioState.sound) {
-        // Durdur
         await audioState.sound.pauseAsync();
         setAudioState((prev) => ({ ...prev, isPlaying: false }));
       } else if (audioState.sound) {
-        // Devam ettir
         await audioState.sound.playAsync();
         setAudioState((prev) => ({ ...prev, isPlaying: true }));
       } else {
-        // Yeni ses yükle ve oynat
         setAudioState((prev) => ({ ...prev, isLoading: true }));
 
-        console.log('MOONO AUDIO DEBUG - OKUNAN URL:', audioUrl);
-
-        // Dosyayı önce indir, sonra oynat (iOS streaming sorunları için)
-        try {
-          // Dosya adını URL'den oluştur (benzersiz cache key için)
-          const filename = audioUrl.split('/').pop() || `audio_${Date.now()}.mp3`;
-          const destinationFile = new File(Paths.cache, filename);
-
-          let fileUriToPlay: string;
-
-          // Dosyanın cache'de olup olmadığını kontrol et
-          if (destinationFile.exists) {
-            // Dosya zaten var, doğrudan kullan
-            console.log('MOONO AUDIO DEBUG - DOSYA HAFIZADA MEVCUT, TEKRAR İNDİRMİYOR:', destinationFile.uri);
-            fileUriToPlay = destinationFile.uri;
-          } else {
-            // Dosya yok, indir
-            console.log('MOONO AUDIO DEBUG - İNDİRME BAŞLIYOR:', destinationFile.uri);
-            const downloadedFile = await File.downloadFileAsync(audioUrl, destinationFile);
-            console.log('MOONO AUDIO DEBUG - İNDİRME TAMAMLANDI:', downloadedFile.uri);
-            fileUriToPlay = downloadedFile.uri;
-          }
-
-          // Dosyayı oynat
-          const { sound } = await Audio.Sound.createAsync(
-            { uri: fileUriToPlay },
-            { shouldPlay: true }
-          );
-          
-          console.log('MOONO AUDIO DEBUG - SES YÜKLENDI VE OYNATILIYOR');
-
-          // Ses durumunu güncelle
-          sound.setOnPlaybackStatusUpdate((status) => {
-            if (status.isLoaded) {
-              setAudioState((prev) => ({
-                ...prev,
-                position: status.positionMillis || 0,
-                duration: status.durationMillis || 0,
-                isPlaying: status.isPlaying || false,
-              }));
-              
-              if (status.didJustFinish) {
-                setAudioState((prev) => ({ ...prev, isPlaying: false, position: 0 }));
-              }
-            }
-          });
-
-          setAudioState({ 
-            sound, 
-            isPlaying: true, 
+        const tryPlayFromUri = async (uri: string) => {
+          const { sound } = await Audio.Sound.createAsync({ uri }, { shouldPlay: true });
+          bindSoundStatus(sound);
+          setAudioState({
+            sound,
+            isPlaying: true,
             isLoading: false,
             position: 0,
             duration: 0,
           });
-        } catch (downloadError) {
-          console.log('MOONO AUDIO DEBUG - İNDİRME/YÜKLEME HATASI:', downloadError);
-          throw downloadError;
+        };
+
+        try {
+          await tryPlayFromUri(audioUrl);
+        } catch (streamErr) {
+          console.log('MOONO AUDIO - Uzak URI ile oynatma basarisiz, indirme deneniyor:', streamErr);
+          const safeName =
+            decodeURIComponent(audioUrl.split('/').pop()?.split('?')[0] || '') ||
+            `audio_${Date.now()}.mp3`;
+          const destinationFile = new File(Paths.cache, safeName);
+          const downloadedFile = await File.downloadFileAsync(audioUrl, destinationFile, {
+            idempotent: true,
+          });
+          await tryPlayFromUri(downloadedFile.uri);
         }
       }
     } catch (error) {
@@ -754,7 +743,21 @@ export default function LessonScreen({ route, navigation }: Props) {
 
   const renderAudioStep = (step: LessonStep) => {
     const metadata = step.metadata || {};
-    const description = metadata.text || metadata.body || '';
+    const audioUrl = metadata.audio_url || metadata.audioUrl;
+    const rawText = (metadata.text || metadata.body || '').trim();
+    const isPlaceholder =
+      !rawText ||
+      /şu an uygulamada gizli/i.test(rawText) ||
+      /su an uygulamada gizli/i.test(rawText);
+    let description = rawText;
+    if (audioUrl && isPlaceholder) {
+      description =
+        'Bu derse ait kısa sesli özet. Kulaklık veya hoparlörle dinleyebilirsin.';
+    } else if (!audioUrl) {
+      description =
+        rawText ||
+        'Ses dosyası henüz bu adıma bağlanmadı (metadata.audio_url eksik).';
+    }
     const markdown = description.replace(/\\n/g, '\n');
     const progress = audioState.duration > 0 
       ? audioState.position / audioState.duration 

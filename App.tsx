@@ -7,7 +7,6 @@ import { StatusBar } from 'expo-status-bar';
 // @ts-expect-error - @expo/vector-icons type declarations may be missing
 import { Ionicons } from '@expo/vector-icons';
 
-import { supabase } from './lib/supabase';
 import AnimatedSplash from './components/AnimatedSplash';
 import HomeScreen from './screens/HomeScreen';
 import LessonScreen from './screens/LessonScreen';
@@ -16,6 +15,10 @@ import AIScreen from './src/screens/AIScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import CompletionScreen from './screens/CompletionScreen';
 import LevelExamScreen from './screens/LevelExamScreen';
+import LoginScreen from './src/screens/LoginScreen';
+import SignupScreen from './src/screens/SignupScreen';
+import ForgotPasswordScreen from './src/screens/ForgotPasswordScreen';
+import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 
 export type RootStackParamList = {
   Main: undefined;
@@ -49,6 +52,8 @@ export type MainTabParamList = {
   Assistant: undefined;
   Profile: undefined;
 };
+
+type AuthScreenName = 'Login' | 'SignUp' | 'ForgotPassword';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const HomeStackNavigator = createNativeStackNavigator<HomeStackParamList>();
@@ -126,33 +131,55 @@ function MainTabs() {
   );
 }
 
-export default function App() {
+function AuthFlow() {
+  const { signIn, signUp, resetPassword } = useAuth();
+  const [screen, setScreen] = useState<AuthScreenName>('Login');
+
+  if (screen === 'SignUp') {
+    return (
+      <SignupScreen
+        onNavigateToLogin={() => setScreen('Login')}
+        onSignUp={signUp}
+      />
+    );
+  }
+
+  if (screen === 'ForgotPassword') {
+    return (
+      <ForgotPasswordScreen
+        onNavigateToLogin={() => setScreen('Login')}
+        onResetPassword={resetPassword}
+      />
+    );
+  }
+
+  return (
+    <LoginScreen
+      onNavigateToSignUp={() => setScreen('SignUp')}
+      onNavigateToForgotPassword={() => setScreen('ForgotPassword')}
+      onSignIn={signIn}
+    />
+  );
+}
+
+const navTheme = {
+  ...DarkTheme,
+  colors: {
+    ...DarkTheme.colors,
+    background: '#000000',
+    card: '#1A1A1A',
+    border: '#333333',
+    text: '#ffffff',
+    primary: '#00C4CC',
+  },
+};
+
+function AppContent() {
+  const { session, isLoading } = useAuth();
   const [showSplash, setShowSplash] = useState(true);
   const appFadeAnim = useRef(new Animated.Value(0)).current;
 
-  useEffect(() => {
-    const initializeAuth = async () => {
-      // Oturum kontrolü yap
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError) {
-        console.warn('Oturum kontrolü hatası:', sessionError.message);
-      }
-
-      // Eğer aktif bir oturum yoksa, anonim giriş yap
-      if (!session) {
-        const { data, error: signInError } = await supabase.auth.signInAnonymously();
-        
-        if (signInError) {
-          console.error('Anonim giriş hatası:', signInError.message);
-        } else {
-          console.log('Anonim giriş yapıldı');
-        }
-      }
-    };
-
-    initializeAuth();
-  }, []);
+  const isAuthenticated = !!session && !session.user.is_anonymous;
 
   const handleSplashFinish = () => {
     setShowSplash(false);
@@ -178,21 +205,26 @@ export default function App() {
     );
   }
 
+  if (isLoading) {
+    return (
+      <>
+        <StatusBar style="light" />
+      </>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <>
+        <StatusBar style="light" />
+        <AuthFlow />
+      </>
+    );
+  }
+
   return (
     <Animated.View style={{ flex: 1, opacity: appFadeAnim }}>
-      <NavigationContainer
-        theme={{
-          ...DarkTheme,
-          colors: {
-            ...DarkTheme.colors,
-            background: '#000000',
-            card: '#1A1A1A',
-            border: '#333333',
-            text: '#ffffff',
-            primary: '#00C4CC',
-          },
-        }}
-      >
+      <NavigationContainer theme={navTheme}>
         <StatusBar style="light" />
         <Stack.Navigator
           initialRouteName="Main"
@@ -246,5 +278,13 @@ export default function App() {
         </Stack.Navigator>
       </NavigationContainer>
     </Animated.View>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
