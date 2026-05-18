@@ -21,6 +21,8 @@ import { isLevelExamPassed } from '../lib/runtimeProgress';
 import type { HomeStackParamList, RootStackParamList } from '../App';
 import LessonPathItem from '../components/LessonPathItem';
 import { useSfx } from '../src/hooks/useSfx';
+import { usePremium } from '../src/contexts/PremiumContext';
+import { isLessonPremiumGated } from '../src/constants/premium';
 
 type Props = CompositeScreenProps<
   NativeStackScreenProps<HomeStackParamList, 'UnitDetail'>,
@@ -87,17 +89,14 @@ export default function UnitDetailScreen({ route, navigation }: Props) {
   const [hasLevelExam, setHasLevelExam] = useState(false);
   const [levelExamTitle, setLevelExamTitle] = useState('Seviye Geçiş Sınavı');
   const { playSound } = useSfx();
+  const { isPremium, firstUnitId, openPaywall } = usePremium();
+
+  const isPremiumLockedLesson = (lessonIndex: number) =>
+    isLessonPremiumGated(unitId, lessonIndex, firstUnitId) && !isPremium;
 
   const handleBackPress = () => {
-    if (navigation.canGoBack()) {
-      navigation.goBack();
-      return;
-    }
-
-    navigation.reset({
-      index: 0,
-      routes: [{ name: 'Main' as never }],
-    });
+    /** goBack() bazen Root’taki Lesson ekranına düşüyor; seviye listesine her zaman Home ile git */
+    navigation.navigate('Home');
   };
 
   useLayoutEffect(() => {
@@ -192,6 +191,12 @@ export default function UnitDetailScreen({ route, navigation }: Props) {
 
   const handleLessonPress = (lesson: Lesson) => {
     const index = lessons.findIndex((l) => l.id === lesson.id);
+
+    if (isPremiumLockedLesson(index)) {
+      openPaywall();
+      return;
+    }
+
     const status = getLessonStatus(index, lesson.id);
 
     if (status !== 'LOCKED') {
@@ -218,6 +223,10 @@ export default function UnitDetailScreen({ route, navigation }: Props) {
   };
 
   const handleLevelExamPress = () => {
+    if (!isPremium) {
+      openPaywall();
+      return;
+    }
     if (!areAllLessonsCompleted) return;
     playSound('correct', { volume: 0.22, maxDurationMs: 200 });
     setTimeout(() => {
@@ -229,6 +238,10 @@ export default function UnitDetailScreen({ route, navigation }: Props) {
   };
 
   const getLessonStatus = (index: number, lessonId: number): 'LOCKED' | 'ACTIVE' | 'COMPLETED' => {
+    if (isPremiumLockedLesson(index)) {
+      return 'LOCKED';
+    }
+
     // COMPLETED: Eğer ders tamamlananlar listesindeyse
     if (completedLessonIds.has(lessonId)) {
       return 'COMPLETED';

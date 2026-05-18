@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Image, StyleSheet, Text, View } from 'react-native';
 import { Audio, Video, ResizeMode } from 'expo-av';
+import * as SplashScreen from 'expo-splash-screen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type AnimatedSplashProps = {
@@ -134,14 +135,31 @@ export default function AnimatedSplash({ onFinish }: AnimatedSplashProps) {
   }, [fadeAnim, pulseAnim, onFinish]);
 
   useEffect(() => {
-    if (isVideoReady) {
+    if (!isVideoReady) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        await SplashScreen.hideAsync();
+      } catch {
+        /* native splash yoksa sorun değil */
+      }
+      if (cancelled) return;
       Animated.timing(videoOpacityAnim, {
         toValue: 1,
-        duration: 220,
+        duration: 280,
         useNativeDriver: true,
       }).start();
-    }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [isVideoReady, videoOpacityAnim]);
+
+  useEffect(() => {
+    if (!SPLASH_VIDEO_SOURCE) {
+      SplashScreen.hideAsync().catch(() => {});
+    }
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -156,21 +174,23 @@ export default function AnimatedSplash({ onFinish }: AnimatedSplashProps) {
       >
         {SPLASH_VIDEO_SOURCE ? (
           <>
-            <Video
-              source={SPLASH_VIDEO_SOURCE}
-              style={styles.splashVideo}
-              resizeMode={ResizeMode.COVER}
-              shouldPlay
-              isLooping
-              isMuted
-              onReadyForDisplay={() => setIsVideoReady(true)}
-              onError={() => setIsVideoReady(true)}
-            />
-            {!isVideoReady && <View style={styles.videoPlaceholder} />}
-            <Animated.View
-              style={[styles.videoPlaceholder, { opacity: videoOpacityAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }) }]}
-              pointerEvents="none"
-            />
+            <View style={styles.videoPlaceholder} />
+            <Animated.View style={[StyleSheet.absoluteFill, { opacity: videoOpacityAnim }]}>
+              <Video
+                source={SPLASH_VIDEO_SOURCE}
+                style={styles.splashVideo}
+                resizeMode={ResizeMode.COVER}
+                shouldPlay={isVideoReady}
+                isLooping
+                isMuted
+                onReadyForDisplay={() => {
+                  if (!isVideoReady) setIsVideoReady(true);
+                }}
+                onError={() => {
+                  if (!isVideoReady) setIsVideoReady(true);
+                }}
+              />
+            </Animated.View>
           </>
         ) : (
           <Image

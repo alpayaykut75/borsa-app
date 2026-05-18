@@ -522,6 +522,28 @@ export default function LessonScreen({ route, navigation }: Props) {
     navigation.goBack();
   };
 
+  /** X: dersi kapat — Root’taki Lesson’ı stack’ten çıkar (navigate Main ile Lesson üstte kalıyordu) */
+  const handleExitToUnitList = useCallback(() => {
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+      return;
+    }
+    if (typeof unitId === 'number') {
+      (navigation as unknown as { navigate: (a: string, b: object) => void }).navigate('Main', {
+        screen: 'HomeStack',
+        params: {
+          screen: 'UnitDetail',
+          params: { unitId, unitTitle: unitTitle ?? 'Seviye' },
+        },
+      });
+    } else {
+      (navigation as unknown as { navigate: (a: string, b: object) => void }).navigate('Main', {
+        screen: 'HomeStack',
+        params: { screen: 'Home' },
+      });
+    }
+  }, [navigation, unitId, unitTitle]);
+
   const ensureAnimation = (stepId: number) => {
     if (!flipAnimations.current[stepId]) {
       flipAnimations.current[stepId] = new Animated.Value(0);
@@ -1039,6 +1061,14 @@ export default function LessonScreen({ route, navigation }: Props) {
             </Text>
             <Text style={styles.headerSubtitle}>{stepHeaderText}</Text>
           </View>
+          <TouchableOpacity
+            style={styles.closeLessonButton}
+            onPress={handleExitToUnitList}
+            activeOpacity={0.7}
+            accessibilityLabel="Derslere dön"
+          >
+            <Ionicons name="close" size={28} color={palette.muted} />
+          </TouchableOpacity>
         </View>
         {renderBody()}
       </View>
@@ -1086,6 +1116,13 @@ const styles = StyleSheet.create({
   },
   headerTextContainer: {
     flex: 1,
+  },
+  closeLessonButton: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 4,
   },
   headerTitle: {
     fontSize: 26,

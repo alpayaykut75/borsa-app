@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Alert, Image, Modal, SafeAreaView, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View, ActivityIndicator } from 'react-native';
+import { Alert, Image, Modal, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View, ActivityIndicator } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import TabScreenHeader from '../components/TabScreenHeader';
 // @ts-expect-error - @expo/vector-icons type declarations may be missing
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -8,6 +10,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../lib/supabase';
 import { useSfx } from '../src/hooks/useSfx';
 import { useAuth } from '../src/contexts/AuthContext';
+import { usePremium } from '../src/contexts/PremiumContext';
 import LegalScreen from './LegalScreen';
 
 const palette = {
@@ -21,9 +24,17 @@ const palette = {
   danger: '#EF4444',
 };
 
-const PROFILE_FORM_KEY = 'moono_profile_form';
-const PROFILE_AVATAR_KEY = 'moono_profile_avatar';
-const PROFILE_PHOTO_KEY = 'moono_profile_photo';
+import {
+  cacheProfileAvatar,
+  cacheProfilePhoto,
+  PROFILE_PHOTO_KEY,
+} from '../src/constants/profileStorage';
+import {
+  DEFAULT_PROFILE_AVATAR_ID,
+  getProfileAvatarSource,
+  normalizeProfileAvatarId,
+} from '../src/constants/avatars';
+import ProfileAvatarPicker from '../components/ProfileAvatarPicker';
 
 const levelImages = [
   require('../assets/levels/level1-cirak.png'),
@@ -32,8 +43,6 @@ const levelImages = [
   require('../assets/levels/level4-stratejist.png'),
   require('../assets/levels/level5-profesyonel.png'),
 ];
-const avatarOptions = ['🙂', '😎', '🤓', '🚀', '🎯', '🐂', '🔥', '🌟', '🧠', '💼'];
-
 type ProfileForm = {
   firstName: string;
   lastName: string;
@@ -44,6 +53,7 @@ type ProfileForm = {
 
 export default function ProfileScreen() {
   const { signOut, session } = useAuth();
+  const { isPremium, openPaywall, restorePurchases, isPurchasing } = usePremium();
   const [completedCount, setCompletedCount] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
   const [currentLevel, setCurrentLevel] = useState(1);
@@ -56,7 +66,7 @@ export default function ProfileScreen() {
     age: '',
     gender: '',
   });
-  const [selectedAvatar, setSelectedAvatar] = useState('🙂');
+  const [selectedAvatar, setSelectedAvatar] = useState(DEFAULT_PROFILE_AVATAR_ID);
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
 
@@ -75,22 +85,37 @@ export default function ProfileScreen() {
   }, [isSfxEnabled]);
 
   useEffect(() => {
-    const loadProfileForm = async () => {
+    const loadProfile = async () => {
       try {
-        const saved = await AsyncStorage.getItem(PROFILE_FORM_KEY);
-        if (saved) {
-          const parsed = JSON.parse(saved) as ProfileForm;
-          setProfileForm(parsed);
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data } = await supabase
+            .from('profiles')
+            .select('first_name, last_name, country, age, gender, avatar')
+            .eq('id', user.id)
+            .single();
+          if (data) {
+            setProfileForm({
+              firstName: data.first_name || '',
+              lastName: data.last_name || '',
+              country: data.country || '',
+              age: data.age?.toString() || '',
+              gender: data.gender || '',
+            });
+            if (data.avatar) {
+              const avatarId = normalizeProfileAvatarId(data.avatar);
+              setSelectedAvatar(avatarId);
+              await cacheProfileAvatar(avatarId);
+            }
+          }
         }
-        const savedAvatar = await AsyncStorage.getItem(PROFILE_AVATAR_KEY);
-        if (savedAvatar) setSelectedAvatar(savedAvatar);
         const savedPhoto = await AsyncStorage.getItem(PROFILE_PHOTO_KEY);
         if (savedPhoto) setProfilePhoto(savedPhoto);
       } catch (error) {
-        console.warn('Profile form load error:', error);
+        console.warn('Profile load error:', error);
       }
     };
-    loadProfileForm();
+    loadProfile();
   }, []);
 
   useEffect(() => {
@@ -139,13 +164,24 @@ export default function ProfileScreen() {
 
   const handleSaveProfile = async () => {
     try {
-      await AsyncStorage.setItem(PROFILE_FORM_KEY, JSON.stringify(profileForm));
-      await AsyncStorage.setItem(PROFILE_AVATAR_KEY, selectedAvatar);
-      if (profilePhoto) {
-        await AsyncStorage.setItem(PROFILE_PHOTO_KEY, profilePhoto);
-      } else {
-        await AsyncStorage.removeItem(PROFILE_PHOTO_KEY);
-      }
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Kullanıcı bulunamadı');
+
+      const { error: dbError } = await supabase.from('profiles').upsert({
+        id: user.id,
+        first_name: profileForm.firstName.trim() || null,
+        last_name: profileForm.lastName.trim() || null,
+        country: profileForm.country.trim() || null,
+        age: profileForm.age ? parseInt(profileForm.age, 10) : null,
+        gender: profileForm.gender.trim() || null,
+        avatar: selectedAvatar,
+        updated_at: new Date().toISOString(),
+      });
+
+      if (dbError) throw dbError;
+
+      await cacheProfileAvatar(selectedAvatar);
+      await cacheProfilePhoto(profilePhoto);
       setIsEditMode(false);
       setIsPasswordSectionOpen(false);
       setNewPassword('');
@@ -216,8 +252,6 @@ export default function ProfileScreen() {
   const levelImage = levelImages[Math.min(Math.max(currentLevel - 1, 0), levelImages.length - 1)];
   const normalizedLevelTitle = currentLevelTitle.replace(/^\s*Seviye\s*\d+\s*:\s*/i, '').trim() || currentLevelTitle;
   const fullName = `${profileForm.firstName} ${profileForm.lastName}`.trim() || 'Ortak';
-  const headerMeta = [profileForm.country || '-', profileForm.age ? `${profileForm.age} yaş` : '-', profileForm.gender || '-'].join(' • ');
-
   const renderAvatar = (size: number, borderSize: number) => {
     if (profilePhoto) {
       return (
@@ -228,25 +262,35 @@ export default function ProfileScreen() {
     }
     return (
       <View style={[styles.avatarFrame, { width: size, height: size, borderRadius: size / 2, borderWidth: borderSize }]}>
-        <Text style={{ fontSize: size * 0.5 }}>{selectedAvatar}</Text>
+        <Image
+          source={getProfileAvatarSource(selectedAvatar)}
+          style={styles.avatarImage}
+          resizeMode="cover"
+        />
       </View>
     );
   };
 
+  const handleSelectAvatar = (avatarId: string) => {
+    setSelectedAvatar(avatarId);
+    setProfilePhoto(null);
+  };
+
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <StatusBar style="light" />
-      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-
-        {/* Header */}
-        <View style={styles.header}>
-          {renderAvatar(56, 1)}
-          <View style={styles.headerText}>
-            <Text style={styles.title} numberOfLines={1}>{fullName}</Text>
-            <Text style={styles.subtitle} numberOfLines={1}>{headerMeta}</Text>
-          </View>
-        </View>
-
+      <TabScreenHeader
+        title={fullName}
+        subtitle="Adım Adım Borsa"
+        avatarImage={profilePhoto ? undefined : getProfileAvatarSource(selectedAvatar)}
+        avatarPhotoUri={profilePhoto}
+        moonoAvatarCrop
+      />
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Düzenle butonu */}
         <TouchableOpacity
           style={styles.editButton}
@@ -269,48 +313,44 @@ export default function ProfileScreen() {
         {isEditMode && (
           <View style={styles.editCard}>
             {/* Avatar Bölümü */}
-            <View style={styles.editAvatarSection}>
-              {renderAvatar(80, 2)}
-              <View style={styles.editAvatarActions}>
-                <TouchableOpacity style={styles.photoActionButton} activeOpacity={0.8} onPress={handleTakePhoto}>
-                  <Ionicons name="camera-outline" size={20} color={palette.accent} />
-                  <Text style={styles.photoActionText}>Kamera</Text>
+            <View style={styles.avatarToolbar}>
+              {profilePhoto ? (
+                renderAvatar(56, 2)
+              ) : (
+                <View style={styles.photoActionButton}>
+                  <Ionicons name="sparkles-outline" size={18} color={palette.accent} />
+                  <Text style={styles.photoActionText}>Avatar seç</Text>
+                </View>
+              )}
+              <TouchableOpacity style={styles.photoActionButton} activeOpacity={0.8} onPress={handleTakePhoto}>
+                <Ionicons name="camera-outline" size={20} color={palette.accent} />
+                <Text style={styles.photoActionText}>Kamera</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.photoActionButton} activeOpacity={0.8} onPress={handlePickPhoto}>
+                <Ionicons name="images-outline" size={20} color={palette.accent} />
+                <Text style={styles.photoActionText}>Galeri</Text>
+              </TouchableOpacity>
+              {profilePhoto ? (
+                <TouchableOpacity
+                  style={styles.photoActionButton}
+                  activeOpacity={0.8}
+                  onPress={() => setProfilePhoto(null)}
+                >
+                  <Ionicons name="trash-outline" size={20} color={palette.danger} />
+                  <Text style={[styles.photoActionText, { color: palette.danger }]}>Kaldır</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.photoActionButton} activeOpacity={0.8} onPress={handlePickPhoto}>
-                  <Ionicons name="images-outline" size={20} color={palette.accent} />
-                  <Text style={styles.photoActionText}>Galeri</Text>
-                </TouchableOpacity>
-                {profilePhoto && (
-                  <TouchableOpacity
-                    style={styles.photoActionButton}
-                    activeOpacity={0.8}
-                    onPress={() => setProfilePhoto(null)}
-                  >
-                    <Ionicons name="trash-outline" size={20} color={palette.danger} />
-                    <Text style={[styles.photoActionText, { color: palette.danger }]}>Kaldır</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
+              ) : null}
             </View>
 
-            {/* Emoji Avatar Seçimi */}
-            {!profilePhoto && (
-              <View style={styles.emojiSection}>
-                <Text style={styles.emojiLabel}>veya emoji seç</Text>
-                <View style={styles.avatarOptionRow}>
-                  {avatarOptions.map((avatar) => (
-                    <TouchableOpacity
-                      key={avatar}
-                      activeOpacity={0.85}
-                      style={[styles.avatarOption, selectedAvatar === avatar && styles.avatarOptionActive]}
-                      onPress={() => setSelectedAvatar(avatar)}
-                    >
-                      <Text style={styles.avatarOptionText}>{avatar}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
+            {!profilePhoto ? (
+              <View style={styles.avatarGridSection}>
+                <ProfileAvatarPicker
+                  selectedId={selectedAvatar}
+                  onSelect={handleSelectAvatar}
+                  columnsPerRow={5}
+                />
               </View>
-            )}
+            ) : null}
 
             {/* Kişisel Bilgiler */}
             <View style={styles.editSectionDivider} />
@@ -393,6 +433,25 @@ export default function ProfileScreen() {
           <Text style={styles.cardValue}>{completedCount}/{totalCount || 0} ders • %{completionRate}</Text>
         </View>
 
+        {/* Premium */}
+        <View style={styles.card}>
+          <Text style={styles.cardLabelFixed}>PREMİUM</Text>
+          <Text style={styles.cardValue}>{isPremium ? 'Aktif' : 'Ücretsiz sürüm'}</Text>
+          {!isPremium && (
+            <TouchableOpacity style={styles.premiumActionBtn} activeOpacity={0.85} onPress={openPaywall}>
+              <Text style={styles.premiumActionText}>Premium'a Geç</Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity
+            style={styles.premiumRestoreBtn}
+            activeOpacity={0.7}
+            onPress={restorePurchases}
+            disabled={isPurchasing}
+          >
+            <Text style={styles.premiumRestoreText}>Satın Alımları Geri Yükle</Text>
+          </TouchableOpacity>
+        </View>
+
         {/* SFX */}
         <View style={styles.card}>
           <View style={styles.settingRow}>
@@ -458,30 +517,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: palette.background,
   },
+  scroll: {
+    flex: 1,
+  },
   container: {
     paddingHorizontal: 20,
     paddingBottom: 40,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingTop: 12,
-    paddingBottom: 16,
-  },
-  headerText: {
-    marginLeft: 14,
-    flex: 1,
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: '700',
-    color: palette.text,
-    marginBottom: 2,
-  },
-  subtitle: {
-    color: palette.muted,
-    fontSize: 14,
-    fontWeight: '500',
   },
   avatarFrame: {
     borderColor: palette.accent,
@@ -523,16 +564,14 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 16,
   },
-  editAvatarSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-  },
-  editAvatarActions: {
-    flex: 1,
+  avatarToolbar: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    alignItems: 'center',
     gap: 8,
+  },
+  avatarGridSection: {
+    marginTop: 14,
   },
   photoActionButton: {
     flexDirection: 'row',
@@ -693,6 +732,28 @@ const styles = StyleSheet.create({
     color: palette.text,
     fontSize: 20,
     fontWeight: '700',
+  },
+  premiumActionBtn: {
+    marginTop: 12,
+    backgroundColor: palette.accent,
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  premiumActionText: {
+    color: '#000',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  premiumRestoreBtn: {
+    marginTop: 10,
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  premiumRestoreText: {
+    color: palette.accent,
+    fontSize: 14,
+    fontWeight: '600',
   },
   levelRow: {
     flexDirection: 'row',

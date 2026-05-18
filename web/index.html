@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Moono</title>
+  <link rel="icon" type="image/png" href="moono-profile.png" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #000;
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .bg-glow {
+      position: fixed;
+      width: 420px;
+      height: 420px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(0,196,204,0.15) 0%, transparent 70%);
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      padding: 40px 28px;
+      max-width: 440px;
+      width: 100%;
+    }
+
+    .logo {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      margin-bottom: 28px;
+      animation: fadeInUp 0.6s ease-out;
+    }
+
+    .icon-circle {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+      animation: scaleIn 0.5s ease-out 0.2s both;
+    }
+
+    .icon-circle.success {
+      background: rgba(0, 196, 204, 0.15);
+      border: 2px solid #00C4CC;
+    }
+
+    .icon-circle.error {
+      background: rgba(239, 68, 68, 0.15);
+      border: 2px solid #EF4444;
+    }
+
+    .icon-circle svg {
+      width: 32px;
+      height: 32px;
+    }
+
+    h1 {
+      font-size: 26px;
+      font-weight: 800;
+      color: #00C4CC;
+      margin-bottom: 12px;
+      animation: fadeInUp 0.6s ease-out 0.3s both;
+    }
+
+    .subtitle {
+      font-size: 16px;
+      color: #888;
+      line-height: 1.6;
+      margin-bottom: 36px;
+      animation: fadeInUp 0.6s ease-out 0.4s both;
+    }
+
+    .btn {
+      display: inline-block;
+      background: #00C4CC;
+      color: #000;
+      font-size: 16px;
+      font-weight: 700;
+      padding: 14px 40px;
+      border-radius: 14px;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      animation: fadeInUp 0.6s ease-out 0.5s both;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(0, 196, 204, 0.3);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .footer {
+      margin-top: 48px;
+      color: #555;
+      font-size: 13px;
+      animation: fadeInUp 0.6s ease-out 0.6s both;
+    }
+
+    .footer a {
+      color: #00C4CC;
+      text-decoration: none;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid #333;
+      border-top-color: #00C4CC;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 24px;
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes scaleIn {
+      from { opacity: 0; transform: scale(0.5); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    #loading-state { display: none; }
+    #success-state { display: none; }
+    #error-state { display: none; }
+    #reset-state { display: none; }
+    #reset-success-state { display: none; }
+    #default-state { display: none; }
+  </style>
+</head>
+<body>
+  <div class="bg-glow"></div>
+  <div class="container">
+    <img src="moono-profile.png" alt="Moono" class="logo" />
+
+    <!-- Loading -->
+    <div id="loading-state">
+      <div class="spinner"></div>
+      <h1>İşleniyor...</h1>
+      <p class="subtitle">Lütfen bekleyin.</p>
+    </div>
+
+    <!-- Email Verified -->
+    <div id="success-state">
+      <div class="icon-circle success">
+        <svg fill="none" stroke="#00C4CC" stroke-width="3" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+        </svg>
+      </div>
+      <h1>E-posta Doğrulandı!</h1>
+      <p class="subtitle">
+        Hesabın başarıyla doğrulandı. Artık Moono uygulamasına giriş yapabilirsin.
+      </p>
+      <a href="#" class="btn" id="open-app-btn">Uygulamayı Aç</a>
+    </div>
+
+    <!-- Error -->
+    <div id="error-state">
+      <div class="icon-circle error">
+        <svg fill="none" stroke="#EF4444" stroke-width="3" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </div>
+      <h1>Bir Hata Oluştu</h1>
+      <p class="subtitle" id="error-message">
+        Doğrulama işlemi sırasında bir sorun oluştu. Lütfen tekrar deneyin.
+      </p>
+    </div>
+
+    <!-- Password Reset -->
+    <div id="reset-state">
+      <div class="icon-circle success">
+        <svg fill="none" stroke="#00C4CC" stroke-width="3" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+        </svg>
+      </div>
+      <h1>Şifre Sıfırlama</h1>
+      <p class="subtitle">Yeni şifreni belirle.</p>
+      <form id="reset-form" style="text-align:left; max-width:320px; margin:0 auto;">
+        <input type="password" id="new-password" placeholder="Yeni şifre" minlength="6" required
+          style="width:100%; padding:14px 16px; background:#1A1A1A; border:1px solid #333; border-radius:12px; color:#fff; font-size:16px; margin-bottom:12px; outline:none;" />
+        <input type="password" id="confirm-password" placeholder="Şifreyi tekrarla" minlength="6" required
+          style="width:100%; padding:14px 16px; background:#1A1A1A; border:1px solid #333; border-radius:12px; color:#fff; font-size:16px; margin-bottom:8px; outline:none;" />
+        <p id="reset-error" style="color:#EF4444; font-size:14px; margin-bottom:12px; display:none;"></p>
+        <button type="submit" class="btn" style="width:100%; margin-top:8px;">Şifreyi Güncelle</button>
+      </form>
+    </div>
+
+    <!-- Password Reset Success -->
+    <div id="reset-success-state">
+      <div class="icon-circle success">
+        <svg fill="none" stroke="#00C4CC" stroke-width="3" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+        </svg>
+      </div>
+      <h1>Şifre Güncellendi!</h1>
+      <p class="subtitle">
+        Şifren başarıyla değiştirildi. Artık yeni şifrenle giriş yapabilirsin.
+      </p>
+      <a href="#" class="btn" id="open-app-btn-2">Uygulamayı Aç</a>
+    </div>
+
+    <!-- Default / Landing -->
+    <div id="default-state">
+      <h1>Moono</h1>
+      <p class="subtitle">
+        Borsayı oyun gibi öğren.<br />
+        Uygulamayı indir ve yatırım dünyasına adım at.
+      </p>
+      <a href="#" class="btn" id="download-btn">Uygulamayı İndir</a>
+    </div>
+
+    <div class="footer">
+      <p>© 2025 Moono. Tüm hakları saklıdır.</p>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://tjxzpfkewlechcpsxull.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRqeHpwZmtld2xlY2hjcHN4dWxsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQxMzAwNTQsImV4cCI6MjA3OTcwNjA1NH0.tq7gBxCFdfY4F9SJgp9LXXx75pX59oFq1ug_UKztjTY';
+
+    function show(id) {
+      document.getElementById(id).style.display = 'block';
+    }
+
+    function parseHash() {
+      const hash = window.location.hash.substring(1);
+      const params = new URLSearchParams(hash);
+      return Object.fromEntries(params.entries());
+    }
+
+    function parseQuery() {
+      return Object.fromEntries(new URLSearchParams(window.location.search).entries());
+    }
+
+    async function init() {
+      const hash = parseHash();
+      const query = parseQuery();
+
+      if (hash.error || query.error) {
+        document.getElementById('error-message').textContent =
+          decodeURIComponent(hash.error_description || query.error_description || 'Bir hata oluştu.');
+        show('error-state');
+        return;
+      }
+
+      if (hash.access_token && hash.type === 'signup') {
+        show('success-state');
+        return;
+      }
+
+      if (hash.access_token && hash.type === 'recovery') {
+        show('loading-state');
+        await setupResetForm(hash.access_token, hash.refresh_token);
+        return;
+      }
+
+      if (hash.access_token && hash.type === 'magiclink') {
+        show('success-state');
+        return;
+      }
+
+      if (hash.access_token) {
+        show('success-state');
+        return;
+      }
+
+      show('default-state');
+    }
+
+    async function setupResetForm(accessToken, refreshToken) {
+      document.getElementById('loading-state').style.display = 'none';
+      show('reset-state');
+
+      document.getElementById('reset-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const pw = document.getElementById('new-password').value;
+        const confirm = document.getElementById('confirm-password').value;
+        const errEl = document.getElementById('reset-error');
+
+        if (pw.length < 6) {
+          errEl.textContent = 'Şifre en az 6 karakter olmalıdır.';
+          errEl.style.display = 'block';
+          return;
+        }
+        if (pw !== confirm) {
+          errEl.textContent = 'Şifreler eşleşmiyor.';
+          errEl.style.display = 'block';
+          return;
+        }
+
+        errEl.style.display = 'none';
+        const btn = this.querySelector('button');
+        btn.textContent = 'Güncelleniyor...';
+        btn.disabled = true;
+
+        try {
+          const res = await fetch(SUPABASE_URL + '/auth/v1/user', {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + accessToken,
+              'apikey': SUPABASE_ANON_KEY,
+            },
+            body: JSON.stringify({ password: pw }),
+          });
+
+          if (!res.ok) {
+            const data = await res.json();
+            throw new Error(data.msg || data.message || 'Şifre güncellenemedi.');
+          }
+
+          document.getElementById('reset-state').style.display = 'none';
+          show('reset-success-state');
+        } catch (err) {
+          btn.textContent = 'Şifreyi Güncelle';
+          btn.disabled = false;
+          errEl.textContent = err.message;
+          errEl.style.display = 'block';
+        }
+      });
+    }
+
+    init();
+  </script>
+</body>
+</html>

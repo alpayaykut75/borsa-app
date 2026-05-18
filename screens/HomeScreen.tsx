@@ -1,16 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   ActivityIndicator,
   FlatList,
-  Image,
-  SafeAreaView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import TabScreenHeader from '../components/TabScreenHeader';
 // @ts-expect-error - @expo/vector-icons type declarations may be missing
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -23,6 +22,8 @@ import { supabase } from '../lib/supabase';
 import type { MainTabParamList, HomeStackParamList } from '../App';
 import UnitPathItem from '../components/UnitPathItem';
 import { useSfx } from '../src/hooks/useSfx';
+import { usePremium } from '../src/contexts/PremiumContext';
+import { isUnitPremiumGated } from '../src/constants/premium';
 
 type NavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<MainTabParamList, 'HomeStack'>,
@@ -45,8 +46,11 @@ const palette = {
   muted: '#888888',
   danger: '#EF4444',
 };
-const PROFILE_AVATAR_KEY = 'moono_profile_avatar';
-const PROFILE_PHOTO_KEY = 'moono_profile_photo';
+import {
+  greetingFirstName,
+  loadProfileDisplay,
+} from '../src/constants/profileStorage';
+import { DEFAULT_PROFILE_AVATAR_ID, getProfileAvatarSource } from '../src/constants/avatars';
 
 export default function HomeScreen() {
   const navigation = useNavigation<NavigationProp>();
@@ -55,9 +59,11 @@ export default function HomeScreen() {
   const [error, setError] = useState<string | null>(null);
   const [completedLessonsByUnit, setCompletedLessonsByUnit] = useState<Record<number, number>>({});
   const [totalLessonsByUnit, setTotalLessonsByUnit] = useState<Record<number, number>>({});
-  const [profileAvatar, setProfileAvatar] = useState('🙂');
+  const [profileAvatarId, setProfileAvatarId] = useState(DEFAULT_PROFILE_AVATAR_ID);
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
+  const [profileFirstName, setProfileFirstName] = useState('');
   const { playSound } = useSfx();
+  const { isPremium, openPaywall } = usePremium();
 
   const fetchUnits = useCallback(async () => {
     setLoading(true);
@@ -84,18 +90,18 @@ export default function HomeScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      const loadAvatar = async () => {
+      const loadHeaderProfile = async () => {
         try {
-          const savedAvatar = await AsyncStorage.getItem(PROFILE_AVATAR_KEY);
-          if (savedAvatar) setProfileAvatar(savedAvatar);
-          const savedPhoto = await AsyncStorage.getItem(PROFILE_PHOTO_KEY);
-          setProfilePhoto(savedPhoto);
+          const display = await loadProfileDisplay();
+          setProfileAvatarId(display.avatar);
+          setProfilePhoto(display.photoUri);
+          setProfileFirstName(display.firstName);
         } catch (error) {
-          console.warn('Avatar load error:', error);
+          console.warn('Profile header load error:', error);
         }
       };
 
-      loadAvatar();
+      loadHeaderProfile();
     }, [])
   );
 
@@ -143,6 +149,13 @@ export default function HomeScreen() {
   }, [units]);
 
   const handleStartLesson = (unit: Unit) => {
+    const sortedUnits = [...units].sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
+    const unitIndex = sortedUnits.findIndex((u) => u.id === unit.id);
+    if (isUnitPremiumGated(unitIndex) && !isPremium) {
+      openPaywall();
+      return;
+    }
+
     playSound('correct', { volume: 0.22, maxDurationMs: 200 });
     navigation.navigate('UnitDetail', {
       unitId: unit.id,
@@ -154,6 +167,10 @@ export default function HomeScreen() {
     const sortedUnits = [...units].sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
     const currentUnit = sortedUnits[index];
     if (!currentUnit) return 'LOCKED';
+
+    if (isUnitPremiumGated(index) && !isPremium) {
+      return 'LOCKED';
+    }
 
     const isCompleted = (unit: Unit) => {
       const completed = completedLessonsByUnit[unit.id] ?? 0;
@@ -223,22 +240,16 @@ export default function HomeScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <StatusBar style="light" />
       <View style={styles.container}>
-        <View style={styles.header}>
-          <View style={styles.avatarContainer}>
-            {profilePhoto ? (
-              <Image source={{ uri: profilePhoto }} style={styles.avatarPhoto} />
-            ) : (
-              <Text style={styles.avatarEmoji}>{profileAvatar}</Text>
-            )}
-          </View>
-          <View style={styles.headerTextContainer}>
-            <Text style={styles.headerGreeting}>Hoş Geldin Ortak</Text>
-            <Text style={styles.headerSubtitle}>Adım Adım Borsa</Text>
-          </View>
-        </View>
+        <TabScreenHeader
+          title={`Hoş Geldin ${greetingFirstName(profileFirstName)}`}
+          subtitle="Adım Adım Borsa"
+          avatarImage={profilePhoto ? undefined : getProfileAvatarSource(profileAvatarId)}
+          avatarPhotoUri={profilePhoto}
+          moonoAvatarCrop
+        />
         {renderState()}
       </View>
     </SafeAreaView>
@@ -252,49 +263,9 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    paddingHorizontal: 20,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingTop: 12,
-    paddingVertical: 24,
-    paddingBottom: 32,
-  },
-  avatarContainer: {
-    marginRight: 16,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: palette.accent,
-    backgroundColor: '#0F0F0F',
-    overflow: 'hidden',
-  },
-  avatarEmoji: {
-    fontSize: 28,
-  },
-  avatarPhoto: {
-    width: '100%',
-    height: '100%',
-  },
-  headerTextContainer: {
-    flex: 1,
-  },
-  headerGreeting: {
-    fontSize: 26,
-    fontWeight: '700',
-    color: palette.text,
-    marginBottom: 4,
-  },
-  headerSubtitle: {
-    fontSize: 16,
-    color: palette.muted,
-    fontWeight: '500',
   },
   listContent: {
+    paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 32,
   },
@@ -302,7 +273,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
   },
   stateText: {
     marginTop: 12,

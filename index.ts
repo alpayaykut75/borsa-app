@@ -1,6 +1,10 @@
 import { registerRootComponent } from 'expo';
+import * as SplashScreen from 'expo-splash-screen';
 
 import App from './App';
+
+/** Beyaz native splash flaşını azalt: JS hazır olana kadar native ekranı tut. */
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 // registerRootComponent calls AppRegistry.registerComponent('main', () => App);
 // It also ensures that whether you load the app in Expo Go or in a native build,

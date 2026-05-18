@@ -5,21 +5,28 @@
 // import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@env'; 
 
 // ÖRNEK DEĞERLERİ KENDİ PROJE DEĞERLERİNİZLE DEĞİŞTİRİN
-const SUPABASE_URL = "https://tjxzpfkewlechcpsxull.supabase.co"; 
-// Anon Key'i Supabase Dashboard > Settings > API bölümünden alın.
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRqeHpwZmtld2xlY2hjcHN4dWxsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQxMzAwNTQsImV4cCI6MjA3OTcwNjA1NH0.tq7gBxCFdfY4F9SJgp9LXXx75pX59oFq1ug_UKztjTY"; 
+import { SUPABASE_ANON_KEY, SUPABASE_URL } from '../../lib/supabase';
 
 const MOONO_GEMINI_URL = `${SUPABASE_URL}/functions/v1/moonogemini`;
+
+export type MoonoChatTurn = {
+  role: 'user' | 'moono';
+  text: string;
+};
 
 /**
  * Kullanıcının sorusunu Moono-Gemini Edge Function'a gönderir.
  * @param userMessage Kullanıcının sorduğu soru
- * @returns Moono'nun metin cevabı (string)
+ * @param history Son mesajlar (bağlam + yarım cevap tamamlama için)
  */
-export async function getMoonoResponse(userMessage: string): Promise<string> {
+export async function getMoonoResponse(
+  userMessage: string,
+  history: MoonoChatTurn[] = [],
+  userTurnIndex = 0,
+): Promise<string> {
     // Kontrol: Eğer kullanıcı mesajı boşsa API çağrısı yapma
     if (!userMessage || userMessage.trim().length === 0) {
-        return "Lütfen Moono'ya bir soru sorarak kodları çözmeye başla.";
+        return "Önce bir soru yaz Ortak, birlikte bakalım.";
     }
 
     try {
@@ -31,7 +38,15 @@ export async function getMoonoResponse(userMessage: string): Promise<string> {
                 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 
             },
             body: JSON.stringify({
-                userMessage: userMessage,
+                userMessage,
+                userTurnIndex,
+                history: history
+                  .filter((m) => m.text?.trim())
+                  .slice(-12)
+                  .map((m) => ({
+                    role: m.role === 'user' ? 'user' : 'model',
+                    text: m.text.trim(),
+                  })),
             }),
         });
 
@@ -39,7 +54,7 @@ export async function getMoonoResponse(userMessage: string): Promise<string> {
             // Sunucu tarafında (Edge Function'da) bir hata oluştuysa
             const errorData = await response.json();
             console.error("Moono Edge Function Error:", errorData);
-            return "Üzgünüm, sistemde bir kod hatası oluştu. Lütfen daha sonra tekrar deneyin.";
+            return "Üzgünüm Ortak, sistemde bir aksaklık oldu. Biraz sonra tekrar dener misin?";
         }
 
         const data = await response.json();

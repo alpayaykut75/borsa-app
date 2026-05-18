@@ -9,3 +9,15 @@ entrypoint = "./functions/moonogemini/index.ts"
 # Specifies static files to be bundled with the function. Supports glob patterns.
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/moonogemini/*.html" ]
+
+[functions.market-turkey]
+enabled = true
+verify_jwt = true
+import_map = "./functions/market-turkey/deno.json"
+entrypoint = "./functions/market-turkey/index.ts"
+
+[functions.moono-daily-brief]
+enabled = true
+verify_jwt = true
+import_map = "./functions/moono-daily-brief/deno.json"
+entrypoint = "./functions/moono-daily-brief/index.ts"

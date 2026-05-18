@@ -45,7 +45,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signUp = async (email: string, password: string): Promise<{ error: string | null }> => {
-    const { error } = await supabase.auth.signUp({ email, password });
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: 'https://alpayaykut75.github.io/moono-web/',
+      },
+    });
     if (error) return { error: error.message };
     return { error: null };
   };
@@ -61,7 +67,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const resetPassword = async (email: string): Promise<{ error: string | null }> => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: 'https://alpayaykut75.github.io/moono-web/',
+    });
     if (error) return { error: error.message };
     return { error: null };
   };

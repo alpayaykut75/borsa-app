@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { palette } from '../constants/theme';
+import { MOONO_CHARACTER_AVATAR } from '../constants/avatars';
 
 type Props = {
   onNavigateToSignUp: () => void;
@@ -60,7 +61,7 @@ export default function LoginScreen({ onNavigateToSignUp, onNavigateToForgotPass
         >
           <View style={styles.logoContainer}>
             <Image
-              source={require('../../assets/moono-profile.png')}
+              source={MOONO_CHARACTER_AVATAR}
               style={styles.logo}
               resizeMode="contain"
             />

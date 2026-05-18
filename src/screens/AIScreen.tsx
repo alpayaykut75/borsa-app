@@ -1,47 +1,43 @@
 // --- src/screens/AIScreen.tsx ---
-import React, { useState, useCallback, useEffect } from 'react';
-import { View, TextInput, TouchableOpacity, ScrollView, Text, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, Image } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import { View, TextInput, TouchableOpacity, ScrollView, Text, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 // @ts-expect-error - @expo/vector-icons type declarations may be missing
 import { Ionicons } from '@expo/vector-icons';
 import { getMoonoResponse } from '../services/MoonoAIService'; // Adım 1'de oluşturulan servis
 import { formatMoonoResponse } from '../utils/MoonoFormatter'; // Formatlama utilitesi
 import { SafeAreaView } from 'react-native-safe-area-context';
+import TabScreenHeader from '../../components/TabScreenHeader';
+import { useAuth } from '../contexts/AuthContext';
+import {
+  loadMoonoChatMessages,
+  moonoChatStorageKey,
+  removeLegacySharedMoonoChat,
+  saveMoonoChatMessages,
+  type StoredMoonoMessage,
+} from '../constants/moonoChatStorage';
+import { MOONO_CHARACTER_AVATAR } from '../constants/avatars';
 
 // MARKADAN GELEN DEĞERLER (Brand Code)
 const DEEP_SPACE_BLACK = '#000000'; // Ana arka plan
 const DARK_MATTER_GREY = '#1A1A1A'; // Kartlar/Giriş alanı
 const NEON_CYAN = '#00C4CC'; // Ana aksiyon rengi
 
-// Mesaj tipleri
-type Message = {
-  id: number;
-  text: string;
-  sender: 'user' | 'moono';
-};
+type Message = StoredMoonoMessage;
 
 const INITIAL_WELCOME_MESSAGE: Message = {
   id: 1,
   sender: 'moono',
-  text: 'Merhaba Ortak! Konulari birlikte sadeleştirelim. Sorunu yaz, adim adim ilerleyelim.',
+  text: 'Merhaba Ortak! Konuları birlikte sadeleştirelim — sorunu yaz, adım adım gidelim.',
 };
 
-const MOONO_CHAT_STORAGE_KEY = 'moono_ai_chat_messages';
-
-function isStoredMessageList(data: unknown): data is Message[] {
-  if (!Array.isArray(data) || data.length === 0) return false;
-  return data.every(
-    (item) =>
-      item &&
-      typeof item === 'object' &&
-      typeof (item as Message).id === 'number' &&
-      typeof (item as Message).text === 'string' &&
-      ((item as Message).sender === 'user' || (item as Message).sender === 'moono')
-  );
-}
-
 export default function AIScreen() {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const { session } = useAuth();
+  const storageKey = useMemo(
+    () => moonoChatStorageKey(session?.user?.id),
+    [session?.user?.id],
+  );
+
+  const [messages, setMessages] = useState<Message[]>([INITIAL_WELCOME_MESSAGE]);
   const [chatHydrated, setChatHydrated] = useState(false);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -49,35 +45,32 @@ export default function AIScreen() {
 
   useEffect(() => {
     let cancelled = false;
+    setChatHydrated(false);
+    setMessages([INITIAL_WELCOME_MESSAGE]);
+    setInput('');
+
     (async () => {
       try {
-        const raw = await AsyncStorage.getItem(MOONO_CHAT_STORAGE_KEY);
+        await removeLegacySharedMoonoChat();
+        const stored = await loadMoonoChatMessages(storageKey);
         if (cancelled) return;
-        if (raw) {
-          const parsed: unknown = JSON.parse(raw);
-          if (isStoredMessageList(parsed)) {
-            setMessages(parsed);
-          } else {
-            setMessages([INITIAL_WELCOME_MESSAGE]);
-          }
-        } else {
-          setMessages([INITIAL_WELCOME_MESSAGE]);
-        }
+        setMessages(stored ?? [INITIAL_WELCOME_MESSAGE]);
       } catch {
         if (!cancelled) setMessages([INITIAL_WELCOME_MESSAGE]);
       } finally {
         if (!cancelled) setChatHydrated(true);
       }
     })();
+
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [storageKey]);
 
   useEffect(() => {
     if (!chatHydrated) return;
-    AsyncStorage.setItem(MOONO_CHAT_STORAGE_KEY, JSON.stringify(messages)).catch(() => {});
-  }, [messages, chatHydrated]);
+    saveMoonoChatMessages(storageKey, messages).catch(() => {});
+  }, [messages, chatHydrated, storageKey]);
 
   // Gönder butonu tıklandığında çalışır
   const handleSendMessage = useCallback(async () => {
@@ -92,7 +85,16 @@ export default function AIScreen() {
 
     try {
       // 2. Moono servisini çağır
-      const moonoText = await getMoonoResponse(userMessage.text);
+      const history = messages
+        .filter((m) => m.id !== userMessage.id)
+        .slice(-10)
+        .map((m) => ({
+          role: m.sender,
+          text: m.text,
+        })) as { role: 'user' | 'moono'; text: string }[];
+
+      const userTurnIndex = history.filter((m) => m.role === 'user').length;
+      const moonoText = await getMoonoResponse(userMessage.text, history, userTurnIndex);
 
       // 3. Moono cevabını ekle
       const moonoResponse: Message = { id: Date.now() + 1, text: moonoText, sender: 'moono' };
@@ -105,7 +107,7 @@ export default function AIScreen() {
     } finally {
       setIsLoading(false);
     }
-  }, [input, isLoading]);
+  }, [input, isLoading, messages]);
 
   // Sohbet balonunu render eder
   const renderMessage = ({ id, text, sender }: Message) => (
@@ -126,25 +128,18 @@ export default function AIScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
-        <View style={styles.header}>
-          <View style={styles.avatarContainer}>
-            <Image
-              source={require('../../assets/moono-profile.png')}
-              style={styles.avatar}
-              resizeMode="cover"
-            />
-          </View>
-          <View>
-            <Text style={styles.headerTitle}>Moono</Text>
-            <Text style={styles.headerSubtitle}>Ortak, yanındayım</Text>
-          </View>
-        </View>
+        <TabScreenHeader
+          title="Moono"
+          subtitle="Ortak, yanındayım"
+          avatarImage={MOONO_CHARACTER_AVATAR}
+          moonoAvatarCrop
+        />
         <ScrollView contentContainerStyle={styles.messageList}>
           {/* Mesajları normal sırada render et */}
           {messages.map(renderMessage)}
@@ -187,49 +182,17 @@ const styles = StyleSheet.create({
   keyboardView: {
     flex: 1,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingVertical: 24,
-    paddingBottom: 32,
-  },
-  avatarContainer: {
-    marginRight: 16,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: NEON_CYAN,
-  },
-  avatar: {
-    width: '100%',
-    height: '100%',
-    transform: [{ scale: 1.28 }, { translateY: 3 }],
-  },
-  headerTitle: {
-    color: 'white',
-    fontSize: 26,
-    fontWeight: '700',
-    marginBottom: 4,
-  },
-  headerSubtitle: {
-    color: '#888888',
-    fontSize: 16,
-    fontWeight: '500',
-  },
   messageList: {
-    paddingHorizontal: 15,
-    paddingVertical: 10,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
     flexGrow: 1,
     justifyContent: 'flex-end', // İçeriği altta tutar
   },
   messageBubble: {
-    padding: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
     borderRadius: 15,
-    marginVertical: 4,
+    marginVertical: 5,
     maxWidth: '85%',
   },
   userBubble: {
@@ -246,11 +209,13 @@ const styles = StyleSheet.create({
   },
   userText: {
     color: 'white',
-    fontSize: 16,
+    fontSize: 17,
+    lineHeight: 26,
   },
   moonoText: {
-    color: 'white', // Metin formatlama utilitesi (Formatter) içinde renklenir
-    fontSize: 16,
+    color: 'white',
+    fontSize: 17,
+    lineHeight: 26,
   },
   inputContainer: {
     flexDirection: 'row',
@@ -266,9 +231,10 @@ const styles = StyleSheet.create({
     color: 'white',
     padding: 12,
     borderRadius: 25,
-    fontSize: 16,
+    fontSize: 17,
+    lineHeight: 22,
     marginRight: 10,
-    height: 50,
+    minHeight: 50,
   },
   textInputFocused: {
     borderWidth: 1,
