@@ -19,7 +19,7 @@ const HOLD_DURATION = 3000;
 const TOTAL_DURATION = TYPEWRITER_DURATION + HOLD_DURATION;
 const SFX_ENABLED_STORAGE_KEY = 'moono_sfx_enabled';
 
-const SPLASH_VIDEO_SOURCE = require('../assets/videos/Siyah_Arka_Planlı_Göz_Kırpma_Videosu.mp4');
+const SPLASH_VIDEO_SOURCE = require('../assets/videos/splash-intro.mp4');
 
 export default function AnimatedSplash({ onFinish }: AnimatedSplashProps) {
   const [displayedText, setDisplayedText] = useState('');
