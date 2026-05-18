@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Image, StyleSheet, Text, View } from 'react-native';
+import { Animated, StyleSheet, Text, View } from 'react-native';
 import { Audio, Video, ResizeMode } from 'expo-av';
 import * as SplashScreen from 'expo-splash-screen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -14,25 +14,31 @@ const palette = {
 };
 
 const BRAND_TEXT = 'MOONO';
-const TYPEWRITER_DURATION = 1000; // 1 second
-const HOLD_DURATION = 3000; // 3.0 seconds (to make total 4.0s)
-const TOTAL_DURATION = TYPEWRITER_DURATION + HOLD_DURATION; // 4.0 seconds total
+const TYPEWRITER_DURATION = 1000;
+const HOLD_DURATION = 3000;
+const TOTAL_DURATION = TYPEWRITER_DURATION + HOLD_DURATION;
 const SFX_ENABLED_STORAGE_KEY = 'moono_sfx_enabled';
-// Optional local video support:
-// 1) Put a file like: assets/videos/splash_intro.mp4
-// 2) Replace null with: require('../assets/videos/splash_intro.mp4')
-// Keep null to use the default Moono image splash.
-const SPLASH_VIDEO_SOURCE: number | null = require('../assets/videos/Siyah_Arka_Planlı_Göz_Kırpma_Videosu.mp4');
+
+const SPLASH_VIDEO_SOURCE = require('../assets/videos/Siyah_Arka_Planlı_Göz_Kırpma_Videosu.mp4');
 
 export default function AnimatedSplash({ onFinish }: AnimatedSplashProps) {
   const [displayedText, setDisplayedText] = useState('');
-  const [isVideoReady, setIsVideoReady] = useState(!SPLASH_VIDEO_SOURCE);
+  const [videoReady, setVideoReady] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const videoOpacityAnim = useRef(new Animated.Value(SPLASH_VIDEO_SOURCE ? 0 : 1)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const soundRef = useRef<Audio.Sound | null>(null);
+  const splashHiddenRef = useRef(false);
 
-  // Load and play splash sound
+  const hideNativeSplashOnce = async () => {
+    if (splashHiddenRef.current) return;
+    splashHiddenRef.current = true;
+    try {
+      await SplashScreen.hideAsync();
+    } catch {
+      /* yoksa sorun değil */
+    }
+  };
+
   useEffect(() => {
     const loadAndPlaySound = async () => {
       try {
@@ -44,10 +50,9 @@ export default function AnimatedSplash({ onFinish }: AnimatedSplashProps) {
           staysActiveInBackground: false,
         });
 
-        // Start sound immediately so audio and visual open together.
         const { sound } = await Audio.Sound.createAsync(
           require('../assets/sfx/splash_chime.mp3'),
-          { shouldPlay: false, volume: 0.65 }
+          { shouldPlay: false, volume: 0.65 },
         );
         soundRef.current = sound;
         await sound.playFromPositionAsync(0);
@@ -58,21 +63,15 @@ export default function AnimatedSplash({ onFinish }: AnimatedSplashProps) {
 
     loadAndPlaySound();
 
-    // Cleanup: unload sound when component unmounts
     return () => {
       if (soundRef.current) {
-        soundRef.current
-          .unloadAsync()
-          .catch((error) => {
-            console.warn('Error unloading splash sound:', error);
-          });
+        soundRef.current.unloadAsync().catch(() => {});
         soundRef.current = null;
       }
     };
   }, []);
 
   useEffect(() => {
-    // Continuous pulsing animation for bull image - starts immediately and loops for entire duration
     const pulseAnimation = Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, {
@@ -86,11 +85,10 @@ export default function AnimatedSplash({ onFinish }: AnimatedSplashProps) {
           useNativeDriver: true,
         }),
       ]),
-      { iterations: -1 } // Infinite loop
+      { iterations: -1 },
     );
     pulseAnimation.start();
 
-    // Typewriter effect
     let currentIndex = 0;
     const typeInterval = setInterval(() => {
       if (currentIndex < BRAND_TEXT.length) {
@@ -101,14 +99,12 @@ export default function AnimatedSplash({ onFinish }: AnimatedSplashProps) {
       }
     }, TYPEWRITER_DURATION / BRAND_TEXT.length);
 
-    // Fade in text
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 300,
       useNativeDriver: true,
     }).start();
 
-    // After typing completes, hold for remaining duration (3.5s), then fade out and finish
     const finishTimer = setTimeout(() => {
       pulseAnimation.stop();
       Animated.parallel([
@@ -134,82 +130,36 @@ export default function AnimatedSplash({ onFinish }: AnimatedSplashProps) {
     };
   }, [fadeAnim, pulseAnim, onFinish]);
 
-  useEffect(() => {
-    if (!isVideoReady) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        await SplashScreen.hideAsync();
-      } catch {
-        /* native splash yoksa sorun değil */
-      }
-      if (cancelled) return;
-      Animated.timing(videoOpacityAnim, {
-        toValue: 1,
-        duration: 280,
-        useNativeDriver: true,
-      }).start();
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [isVideoReady, videoOpacityAnim]);
-
-  useEffect(() => {
-    if (!SPLASH_VIDEO_SOURCE) {
-      SplashScreen.hideAsync().catch(() => {});
-    }
-  }, []);
+  const onVideoReadyForDisplay = () => {
+    if (videoReady) return;
+    setVideoReady(true);
+    hideNativeSplashOnce();
+  };
 
   return (
     <View style={styles.container}>
-      {/* Moono Bull Image at Bottom with Pulse Animation */}
       <Animated.View
         style={[
           styles.imageContainer,
-          {
-            transform: [{ scale: pulseAnim }],
-          },
+          { transform: [{ scale: pulseAnim }] },
         ]}
       >
-        {SPLASH_VIDEO_SOURCE ? (
-          <>
-            <View style={styles.videoPlaceholder} />
-            <Animated.View style={[StyleSheet.absoluteFill, { opacity: videoOpacityAnim }]}>
-              <Video
-                source={SPLASH_VIDEO_SOURCE}
-                style={styles.splashVideo}
-                resizeMode={ResizeMode.COVER}
-                shouldPlay={isVideoReady}
-                isLooping
-                isMuted
-                onReadyForDisplay={() => {
-                  if (!isVideoReady) setIsVideoReady(true);
-                }}
-                onError={() => {
-                  if (!isVideoReady) setIsVideoReady(true);
-                }}
-              />
-            </Animated.View>
-          </>
-        ) : (
-          <Image
-            source={require('../assets/moono_bull.png')}
-            style={styles.bullImage}
-            resizeMode="contain"
-          />
-        )}
+        <Video
+          source={SPLASH_VIDEO_SOURCE}
+          style={[styles.splashVideo, !videoReady && styles.videoHidden]}
+          resizeMode={ResizeMode.COVER}
+          shouldPlay
+          isLooping
+          isMuted
+          onReadyForDisplay={onVideoReadyForDisplay}
+          onError={() => {
+            hideNativeSplashOnce();
+            setVideoReady(true);
+          }}
+        />
       </Animated.View>
 
-      {/* MOONO Text Higher Up */}
-      <Animated.View
-        style={[
-          styles.textContainer,
-          {
-            opacity: fadeAnim,
-          },
-        ]}
-      >
+      <Animated.View style={[styles.textContainer, { opacity: fadeAnim }]}>
         <Text style={styles.brandText}>{displayedText}</Text>
       </Animated.View>
     </View>
@@ -230,18 +180,12 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     height: '50%',
   },
-  bullImage: {
-    width: '85%',
-    height: '100%',
-    maxHeight: 400,
-  },
   splashVideo: {
     width: '100%',
     height: '100%',
   },
-  videoPlaceholder: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: palette.background,
+  videoHidden: {
+    opacity: 0,
   },
   textContainer: {
     position: 'absolute',
@@ -258,4 +202,3 @@ const styles = StyleSheet.create({
     letterSpacing: 4,
   },
 });
-
