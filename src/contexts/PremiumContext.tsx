@@ -11,6 +11,11 @@ import {
 import PaywallModal from '../../components/PaywallModal';
 import { useAuth } from './AuthContext';
 
+export type PaywallCopy = {
+  title?: string;
+  subtitle?: string;
+};
+
 type PremiumContextType = {
   isPremium: boolean;
   isLoading: boolean;
@@ -18,7 +23,8 @@ type PremiumContextType = {
   priceString: string | null;
   purchaseError: string | null;
   isPurchasing: boolean;
-  openPaywall: () => void;
+  paywallCopy: PaywallCopy | null;
+  openPaywall: (copy?: PaywallCopy) => void;
   closePaywall: () => void;
   purchasePremium: () => Promise<boolean>;
   restorePurchases: () => Promise<boolean>;
@@ -43,6 +49,7 @@ export function PremiumProvider({ children }: { children: React.ReactNode }) {
   const [purchaseError, setPurchaseError] = useState<string | null>(null);
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [paywallVisible, setPaywallVisible] = useState(false);
+  const [paywallCopy, setPaywallCopy] = useState<PaywallCopy | null>(null);
   const [purchasesReady, setPurchasesReady] = useState(false);
 
   const userEmail = session?.user?.email;
@@ -110,16 +117,29 @@ export function PremiumProvider({ children }: { children: React.ReactNode }) {
         if (cancelled) return;
         setPurchasesReady(true);
 
-        const [customerInfo, products] = await Promise.all([
-          Purchases.getCustomerInfo(),
-          Purchases.getProducts([PREMIUM_PRODUCT_ID]),
-        ]);
-
+        const customerInfo = await Purchases.getCustomerInfo();
         if (cancelled) return;
 
         setIsPremium(readPremiumFromCustomerInfo(customerInfo));
 
-        const lifetimeProduct = products[0] ?? null;
+        let lifetimeProduct: PurchasesStoreProduct | null = null;
+        try {
+          const offerings = await Purchases.getOfferings();
+          const packages = offerings.current?.availablePackages ?? [];
+          const fromOffering = packages.find(
+            (pkg) => pkg.product.identifier === PREMIUM_PRODUCT_ID,
+          );
+          lifetimeProduct = fromOffering?.product ?? null;
+        } catch {
+          /* offerings yoksa products dene */
+        }
+
+        if (!lifetimeProduct) {
+          const products = await Purchases.getProducts([PREMIUM_PRODUCT_ID]);
+          lifetimeProduct = products[0] ?? null;
+        }
+
+        if (cancelled) return;
         setProduct(lifetimeProduct);
         setPriceString(lifetimeProduct?.priceString ?? null);
       } catch {
@@ -145,7 +165,9 @@ export function PremiumProvider({ children }: { children: React.ReactNode }) {
     }
 
     if (!product) {
-      setPurchaseError('Ürün yüklenemedi. Lütfen daha sonra tekrar dene.');
+      setPurchaseError(
+        'Mağaza ürünü yüklenemedi. TestFlight’ta Sandbox test hesabıyla App Store’a giriş yap veya biraz sonra tekrar dene.',
+      );
       return false;
     }
 
@@ -157,9 +179,14 @@ export function PremiumProvider({ children }: { children: React.ReactNode }) {
       if (premium) setPaywallVisible(false);
       return premium;
     } catch (err: unknown) {
-      const error = err as { userCancelled?: boolean; message?: string };
+      const error = err as { userCancelled?: boolean; message?: string; code?: string };
       if (!error.userCancelled) {
-        setPurchaseError(error.message ?? 'Satın alma tamamlanamadı.');
+        const raw = error.message ?? '';
+        const friendly =
+          raw.includes('STORE_PROBLEM') || raw.includes('Unable to connect')
+            ? 'App Store’a şu an ulaşılamıyor. İnternetini kontrol et veya Sandbox hesabınla tekrar dene.'
+            : raw || 'Satın alma tamamlanamadı. Sandbox test hesabı kullanıyorsan App Store ayarlarından çıkış yapıp tekrar dene.';
+        setPurchaseError(friendly);
       }
       return false;
     } finally {
@@ -197,10 +224,14 @@ export function PremiumProvider({ children }: { children: React.ReactNode }) {
     }
   }, [bypass, purchasesReady]);
 
-  const openPaywall = useCallback(() => setPaywallVisible(true), []);
+  const openPaywall = useCallback((copy?: PaywallCopy) => {
+    setPaywallCopy(copy ?? null);
+    setPaywallVisible(true);
+  }, []);
   const closePaywall = useCallback(() => {
     setPaywallVisible(false);
     setPurchaseError(null);
+    setPaywallCopy(null);
   }, []);
 
   return (
@@ -212,6 +243,7 @@ export function PremiumProvider({ children }: { children: React.ReactNode }) {
         priceString,
         purchaseError,
         isPurchasing,
+        paywallCopy,
         openPaywall,
         closePaywall,
         purchasePremium,
@@ -222,6 +254,8 @@ export function PremiumProvider({ children }: { children: React.ReactNode }) {
       {children}
       <PaywallModal
         visible={paywallVisible}
+        title={paywallCopy?.title}
+        subtitle={paywallCopy?.subtitle}
         priceString={priceString}
         purchaseError={purchaseError}
         isPurchasing={isPurchasing}

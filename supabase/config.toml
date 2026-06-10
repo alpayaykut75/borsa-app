@@ -21,3 +21,9 @@ enabled = true
 verify_jwt = true
 import_map = "./functions/moono-daily-brief/deno.json"
 entrypoint = "./functions/moono-daily-brief/index.ts"
+
+[functions.moono-daily-word]
+enabled = true
+verify_jwt = true
+import_map = "./functions/moono-daily-word/deno.json"
+entrypoint = "./functions/moono-daily-word/index.ts"

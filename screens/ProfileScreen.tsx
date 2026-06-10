@@ -16,7 +16,7 @@ import LegalScreen from './LegalScreen';
 const palette = {
   background: '#000000',
   text: '#FFFFFF',
-  muted: '#888888',
+  muted: '#8A8A8A',
   card: '#1A1A1A',
   cardDark: '#0F0F0F',
   border: '#333333',
@@ -35,6 +35,8 @@ import {
   normalizeProfileAvatarId,
 } from '../src/constants/avatars';
 import ProfileAvatarPicker from '../components/ProfileAvatarPicker';
+import AppButton from '../components/AppButton';
+import { neutrals, spacing } from '../src/constants/theme';
 
 const levelImages = [
   require('../assets/levels/level1-cirak.png'),
@@ -276,39 +278,40 @@ export default function ProfileScreen() {
     setProfilePhoto(null);
   };
 
+  const toggleEditMode = () => {
+    setIsEditMode((prev) => {
+      const next = !prev;
+      if (!next) {
+        setPasswordError('');
+      }
+      return next;
+    });
+  };
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <StatusBar style="light" />
       <TabScreenHeader
         title={fullName}
-        subtitle="Adım Adım Borsa"
+        subtitle="Kişisel alanın"
         avatarImage={profilePhoto ? undefined : getProfileAvatarSource(selectedAvatar)}
         avatarPhotoUri={profilePhoto}
         moonoAvatarCrop
+        trailing={(
+          <TouchableOpacity
+            style={styles.headerIconButton}
+            activeOpacity={0.85}
+            onPress={toggleEditMode}
+          >
+            <Ionicons name={isEditMode ? 'close' : 'pencil'} size={24} color={palette.accent} />
+          </TouchableOpacity>
+        )}
       />
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
       >
-        {/* Düzenle butonu */}
-        <TouchableOpacity
-          style={styles.editButton}
-          activeOpacity={0.85}
-          onPress={() => {
-            setIsEditMode((prev) => !prev);
-            if (isEditMode) {
-              setIsPasswordSectionOpen(false);
-              setPasswordError('');
-              setNewPassword('');
-              setConfirmNewPassword('');
-            }
-          }}
-        >
-          <Ionicons name={isEditMode ? 'close' : 'create-outline'} size={18} color={palette.accent} />
-          <Text style={styles.editButtonText}>{isEditMode ? 'Vazgeç' : 'Profili Düzenle'}</Text>
-        </TouchableOpacity>
-
         {/* Düzenleme Modu */}
         {isEditMode && (
           <View style={styles.editCard}>
@@ -367,142 +370,163 @@ export default function ProfileScreen() {
               </View>
             </View>
 
-            {/* Şifre Değiştir */}
-            <View style={styles.editSectionDivider} />
-            <TouchableOpacity
-              style={styles.passwordToggle}
-              activeOpacity={0.8}
-              onPress={() => {
-                setIsPasswordSectionOpen((prev) => !prev);
-                setPasswordError('');
-                setNewPassword('');
-                setConfirmNewPassword('');
-              }}
-            >
-              <View style={styles.passwordToggleLeft}>
-                <Ionicons name="key-outline" size={18} color={palette.accent} />
-                <Text style={styles.editSectionTitle}>ŞİFRE DEĞİŞTİR</Text>
-              </View>
-              <Ionicons name={isPasswordSectionOpen ? 'chevron-up' : 'chevron-down'} size={18} color={palette.muted} />
-            </TouchableOpacity>
-
-            {isPasswordSectionOpen && (
-              <View style={styles.passwordForm}>
-                <TextInput style={styles.input} placeholder="Yeni Şifre" placeholderTextColor="#666" value={newPassword} onChangeText={setNewPassword} secureTextEntry />
-                <TextInput style={styles.input} placeholder="Yeni Şifre Tekrar" placeholderTextColor="#666" value={confirmNewPassword} onChangeText={setConfirmNewPassword} secureTextEntry />
-                {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
-                <TouchableOpacity
-                  style={[styles.passwordSaveButton, passwordLoading && { opacity: 0.6 }]}
-                  activeOpacity={0.85}
-                  onPress={handleChangePassword}
-                  disabled={passwordLoading}
-                >
-                  {passwordLoading ? (
-                    <ActivityIndicator color={palette.accent} size="small" />
-                  ) : (
-                    <Text style={styles.passwordSaveText}>Şifreyi Güncelle</Text>
-                  )}
-                </TouchableOpacity>
-              </View>
-            )}
-
             {/* Kaydet Butonu */}
-            <TouchableOpacity style={styles.saveButton} activeOpacity={0.85} onPress={handleSaveProfile}>
-              <Text style={styles.saveButtonText}>Profili Kaydet</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* Seviye Kartı */}
-        <View style={styles.card}>
-          <View style={styles.levelRow}>
-            <View style={styles.levelBadgeLargeFrame}>
-              <Image source={levelImage} style={styles.levelBadgeImage} resizeMode="cover" />
-            </View>
-            <View style={styles.levelTextWrap}>
-              <Text style={styles.levelOverline}>SEVİYE {currentLevel}</Text>
-              <Text style={styles.levelTitle}>{normalizedLevelTitle}</Text>
-              <Text style={styles.levelHint}>Bu seviyede devam ediyorsun.</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* İlerleme */}
-        <View style={styles.card}>
-          <Text style={styles.cardLabel}>Genel İlerleme</Text>
-          <Text style={styles.cardValue}>{completedCount}/{totalCount || 0} ders • %{completionRate}</Text>
-        </View>
-
-        {/* Premium */}
-        <View style={styles.card}>
-          <Text style={styles.cardLabelFixed}>PREMİUM</Text>
-          <Text style={styles.cardValue}>{isPremium ? 'Aktif' : 'Ücretsiz sürüm'}</Text>
-          {!isPremium && (
-            <TouchableOpacity style={styles.premiumActionBtn} activeOpacity={0.85} onPress={openPaywall}>
-              <Text style={styles.premiumActionText}>Premium'a Geç</Text>
-            </TouchableOpacity>
-          )}
-          <TouchableOpacity
-            style={styles.premiumRestoreBtn}
-            activeOpacity={0.7}
-            onPress={restorePurchases}
-            disabled={isPurchasing}
-          >
-            <Text style={styles.premiumRestoreText}>Satın Alımları Geri Yükle</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* SFX */}
-        <View style={styles.card}>
-          <View style={styles.settingRow}>
-            <View>
-              <Text style={styles.cardLabelFixed}>SES EFEKTLERİ</Text>
-              <Text style={styles.settingHint}>Doğru/yanlış, kilit açma ve tamamlama sesleri</Text>
-            </View>
-            <Switch
-              value={sfxEnabled}
-              onValueChange={handleToggleSfx}
-              trackColor={{ false: '#3A3A3A', true: '#00C4CC' }}
-              thumbColor={sfxEnabled ? '#FFFFFF' : '#B0B0B0'}
+            <AppButton
+              title="Profili Kaydet"
+              onPress={handleSaveProfile}
+              variant="secondary"
+              style={styles.saveButton}
             />
           </View>
-        </View>
-
-        {/* Hesap */}
-        {session?.user?.email && (
-          <View style={styles.card}>
-            <Text style={styles.cardLabelFixed}>HESAP</Text>
-            <Text style={styles.emailText}>{session.user.email}</Text>
-          </View>
         )}
 
-        {/* Yasal Bilgiler */}
-        <TouchableOpacity
-          style={styles.legalButton}
-          activeOpacity={0.8}
-          onPress={() => setShowLegal(true)}
-        >
-          <Ionicons name="document-text-outline" size={18} color={palette.muted} />
-          <Text style={styles.legalButtonText}>Yasal Bilgiler</Text>
-          <Ionicons name="chevron-forward" size={16} color={palette.muted} style={{ marginLeft: 'auto' }} />
-        </TouchableOpacity>
+        {!isEditMode && (
+          <>
+            {/* Hesap ve Güvenlik (öncelikli) */}
+            <View style={styles.card}>
+              <Text style={styles.cardLabelFixed}>HESAP VE GÜVENLİK</Text>
+              {session?.user?.email ? (
+                <Text style={styles.emailText}>{session.user.email}</Text>
+              ) : (
+                <Text style={styles.settingHint}>Mail adresi bulunamadı.</Text>
+              )}
+              <TouchableOpacity
+                style={styles.passwordToggle}
+                activeOpacity={0.8}
+                onPress={() => {
+                  setIsPasswordSectionOpen((prev) => !prev);
+                  setPasswordError('');
+                  setNewPassword('');
+                  setConfirmNewPassword('');
+                }}
+              >
+                <View style={styles.passwordToggleLeft}>
+                  <Ionicons name="key-outline" size={18} color={palette.accent} />
+                  <Text style={styles.passwordToggleText}>Şifre Değiştir</Text>
+                </View>
+                <Ionicons name={isPasswordSectionOpen ? 'chevron-up' : 'chevron-down'} size={18} color={palette.muted} />
+              </TouchableOpacity>
 
-        {/* Çıkış */}
-        <TouchableOpacity
-          style={styles.signOutButton}
-          activeOpacity={0.85}
-          onPress={() => {
-            Alert.alert('Çıkış Yap', 'Hesabından çıkış yapmak istediğine emin misin?', [
-              { text: 'Vazgeç', style: 'cancel' },
-              { text: 'Çıkış Yap', style: 'destructive', onPress: signOut },
-            ]);
-          }}
-        >
-          <Ionicons name="log-out-outline" size={20} color={palette.accent} />
-          <Text style={styles.signOutText}>Çıkış Yap</Text>
-        </TouchableOpacity>
+              {isPasswordSectionOpen && (
+                <View style={styles.passwordForm}>
+                  <TextInput style={styles.input} placeholder="Yeni Şifre" placeholderTextColor="#666" value={newPassword} onChangeText={setNewPassword} secureTextEntry />
+                  <TextInput style={styles.input} placeholder="Yeni Şifre Tekrar" placeholderTextColor="#666" value={confirmNewPassword} onChangeText={setConfirmNewPassword} secureTextEntry />
+                  {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
+                  <TouchableOpacity
+                    style={[styles.passwordSaveButton, passwordLoading && { opacity: 0.6 }]}
+                    activeOpacity={0.85}
+                    onPress={handleChangePassword}
+                    disabled={passwordLoading}
+                  >
+                    {passwordLoading ? (
+                      <ActivityIndicator color={palette.accent} size="small" />
+                    ) : (
+                      <Text style={styles.passwordSaveText}>Şifreyi Güncelle</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
 
-        <Text style={styles.versionText}>Moono v1.0.0</Text>
+            {/* Seviye Kartı */}
+            <View style={styles.card}>
+              <View style={styles.levelRow}>
+                <View style={styles.levelBadgeLargeFrame}>
+                  <Image source={levelImage} style={styles.levelBadgeImage} resizeMode="cover" />
+                </View>
+                <View style={styles.levelTextWrap}>
+                  <Text style={styles.levelOverline}>SEVİYE {currentLevel}</Text>
+                  <Text style={styles.levelTitle}>{normalizedLevelTitle}</Text>
+                  <Text style={styles.levelHint}>Bu seviyede devam ediyorsun.</Text>
+                </View>
+              </View>
+            </View>
+
+            {/* İlerleme */}
+            <View style={styles.card}>
+              <Text style={styles.cardLabel}>Genel İlerleme</Text>
+              <Text style={styles.cardValue}>{completedCount}/{totalCount || 0} ders • %{completionRate}</Text>
+            </View>
+
+            {/* Premium */}
+            <View style={styles.card}>
+              <Text style={styles.cardLabelFixed}>{isPremium ? 'PREMİUM AKTİF' : 'ÜCRETSİZ SÜRÜM'}</Text>
+              {!isPremium ? (
+                <>
+                  <Text style={styles.premiumHint}>
+                    İlk 5 ders ücretsiz. 6. dersten sonra tüm dersler ve Moono asistanı açılır.
+                  </Text>
+                  <AppButton
+                    title="Premium'a Geç"
+                    onPress={() =>
+                      openPaywall({
+                        title: 'Premium ile devam et',
+                        subtitle:
+                          'İlk 5 ders ücretsiz. 6. dersten itibaren tüm dersler ve Moono asistanı Premium ile açılır.',
+                      })
+                    }
+                    variant="secondary"
+                    style={styles.premiumActionBtn}
+                  />
+                </>
+              ) : (
+                <Text style={styles.cardValue}>Aktif — tüm içerik açık</Text>
+              )}
+              <TouchableOpacity
+                style={styles.premiumRestoreBtn}
+                activeOpacity={0.7}
+                onPress={restorePurchases}
+                disabled={isPurchasing}
+              >
+                <Text style={styles.premiumRestoreText}>Satın Alımları Geri Yükle</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* SFX */}
+            <View style={styles.card}>
+              <View style={styles.settingRow}>
+                <View>
+                  <Text style={styles.cardLabelFixed}>SES EFEKTLERİ</Text>
+                  <Text style={styles.settingHint}>Doğru/yanlış, kilit açma ve tamamlama sesleri</Text>
+                </View>
+                <Switch
+                  value={sfxEnabled}
+                  onValueChange={handleToggleSfx}
+                  trackColor={{ false: neutrals.switchTrackOff, true: '#00C4CC' }}
+                  thumbColor={sfxEnabled ? '#FFFFFF' : neutrals.switchThumbOff}
+                />
+              </View>
+            </View>
+
+            {/* Yasal Bilgiler */}
+            <TouchableOpacity
+              style={styles.legalButton}
+              activeOpacity={0.8}
+              onPress={() => setShowLegal(true)}
+            >
+              <Ionicons name="document-text-outline" size={18} color={palette.muted} />
+              <Text style={styles.legalButtonText}>Yasal Bilgiler</Text>
+              <Ionicons name="chevron-forward" size={16} color={palette.muted} style={{ marginLeft: 'auto' }} />
+            </TouchableOpacity>
+
+            {/* Çıkış */}
+            <TouchableOpacity
+              style={styles.signOutButton}
+              activeOpacity={0.85}
+              onPress={() => {
+                Alert.alert('Çıkış Yap', 'Hesabından çıkış yapmak istediğine emin misin?', [
+                  { text: 'Vazgeç', style: 'cancel' },
+                  { text: 'Çıkış Yap', style: 'destructive', onPress: signOut },
+                ]);
+              }}
+            >
+              <Ionicons name="log-out-outline" size={20} color={palette.accent} />
+              <Text style={styles.signOutText}>Çıkış Yap</Text>
+            </TouchableOpacity>
+
+            <Text style={styles.versionText}>Moono v1.0.0</Text>
+          </>
+        )}
       </ScrollView>
 
       <Modal visible={showLegal} animationType="slide" presentationStyle="pageSheet">
@@ -521,8 +545,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   container: {
-    paddingHorizontal: 20,
-    paddingBottom: 40,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.xl,
   },
   avatarFrame: {
     borderColor: palette.accent,
@@ -536,23 +560,12 @@ const styles = StyleSheet.create({
     height: '100%',
   },
 
-  // Düzenle butonu
-  editButton: {
-    flexDirection: 'row',
+  headerIconButton: {
+    width: 36,
+    height: 36,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 12,
-    marginBottom: 16,
-    borderRadius: 12,
-    backgroundColor: palette.card,
-    borderWidth: 1,
-    borderColor: palette.border,
-  },
-  editButtonText: {
-    color: palette.accent,
-    fontSize: 15,
-    fontWeight: '700',
+    marginRight: 4,
   },
 
   // Düzenleme kartı
@@ -561,8 +574,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: palette.accent + '44',
     borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
+    padding: spacing.md,
+    marginBottom: spacing.md,
   },
   avatarToolbar: {
     flexDirection: 'row',
@@ -571,14 +584,14 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   avatarGridSection: {
-    marginTop: 14,
+    marginTop: spacing.sm,
   },
   photoActionButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
     backgroundColor: palette.cardDark,
     borderRadius: 10,
     borderWidth: 1,
@@ -660,12 +673,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginTop: 12,
     marginBottom: 4,
   },
   passwordToggleLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+  },
+  passwordToggleText: {
+    color: palette.text,
+    fontSize: 15,
+    fontWeight: '600',
   },
   passwordForm: {
     gap: 10,
@@ -692,17 +711,8 @@ const styles = StyleSheet.create({
   },
 
   saveButton: {
-    marginTop: 16,
-    backgroundColor: palette.accent,
+    marginTop: spacing.md,
     borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 14,
-  },
-  saveButtonText: {
-    color: '#000000',
-    fontSize: 16,
-    fontWeight: '700',
   },
 
   // Kartlar
@@ -711,8 +721,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: palette.border,
     borderRadius: 16,
-    padding: 16,
-    marginBottom: 14,
+    padding: spacing.sm,
+    marginBottom: spacing.xs,
   },
   cardLabel: {
     color: palette.muted,
@@ -735,20 +745,12 @@ const styles = StyleSheet.create({
   },
   premiumActionBtn: {
     marginTop: 12,
-    backgroundColor: palette.accent,
     borderRadius: 12,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  premiumActionText: {
-    color: '#000',
-    fontSize: 15,
-    fontWeight: '700',
   },
   premiumRestoreBtn: {
-    marginTop: 10,
+    marginTop: 8,
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingVertical: 4,
   },
   premiumRestoreText: {
     color: palette.accent,
@@ -806,6 +808,11 @@ const styles = StyleSheet.create({
     fontSize: 13,
     maxWidth: 250,
   },
+  premiumHint: {
+    color: palette.muted,
+    fontSize: 13,
+    lineHeight: 19,
+  },
   emailText: {
     color: palette.text,
     fontSize: 15,
@@ -815,9 +822,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    marginBottom: 14,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.xs,
     borderRadius: 14,
     backgroundColor: palette.card,
     borderWidth: 1,
@@ -833,9 +840,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    paddingVertical: 16,
+    paddingVertical: spacing.sm,
     marginTop: 4,
-    marginBottom: 20,
+    marginBottom: spacing.sm,
     borderRadius: 14,
     backgroundColor: palette.card,
     borderWidth: 1,

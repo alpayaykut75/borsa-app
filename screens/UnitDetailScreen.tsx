@@ -22,7 +22,8 @@ import type { HomeStackParamList, RootStackParamList } from '../App';
 import LessonPathItem from '../components/LessonPathItem';
 import { useSfx } from '../src/hooks/useSfx';
 import { usePremium } from '../src/contexts/PremiumContext';
-import { isLessonPremiumGated } from '../src/constants/premium';
+import { isSixthLessonPremiumGate } from '../src/constants/premium';
+import { UNLOCK_ALL_FOR_TEST } from '../src/constants/devFlags';
 
 type Props = CompositeScreenProps<
   NativeStackScreenProps<HomeStackParamList, 'UnitDetail'>,
@@ -40,6 +41,7 @@ type LevelExamItem = {
   id: string;
   title: string;
   description?: string;
+  icon_name?: string;
   type: 'LEVEL_EXAM';
 };
 type LessonListItem = Lesson | LevelExamItem;
@@ -91,8 +93,26 @@ export default function UnitDetailScreen({ route, navigation }: Props) {
   const { playSound } = useSfx();
   const { isPremium, firstUnitId, openPaywall } = usePremium();
 
-  const isPremiumLockedLesson = (lessonIndex: number) =>
-    isLessonPremiumGated(unitId, lessonIndex, firstUnitId) && !isPremium;
+  const isCheckpointExamLesson = (lesson: Lesson) => {
+    const title = (lesson.title || '').toLowerCase();
+    return (
+      title.includes('ara değerlendirme') ||
+      title.includes('ara degerlendirme') ||
+      lesson.icon_name === 'medal-outline' ||
+      lesson.icon_name === 'document-text-outline'
+    );
+  };
+
+  const getCoreLessonIndex = (lessonIndex: number) =>
+    lessons
+      .slice(0, lessonIndex + 1)
+      .filter((lesson) => !isCheckpointExamLesson(lesson)).length - 1;
+
+  const isPremiumGateLesson = (lessonIndex: number, lesson: Lesson) =>
+    !UNLOCK_ALL_FOR_TEST &&
+    !isCheckpointExamLesson(lesson) &&
+    isSixthLessonPremiumGate(unitId, getCoreLessonIndex(lessonIndex), firstUnitId) &&
+    !isPremium;
 
   const handleBackPress = () => {
     /** goBack() bazen Root’taki Lesson ekranına düşüyor; seviye listesine her zaman Home ile git */
@@ -192,42 +212,32 @@ export default function UnitDetailScreen({ route, navigation }: Props) {
   const handleLessonPress = (lesson: Lesson) => {
     const index = lessons.findIndex((l) => l.id === lesson.id);
 
-    if (isPremiumLockedLesson(index)) {
-      openPaywall();
+    if (isPremiumGateLesson(index, lesson)) {
+      openPaywall({
+        title: 'Premium ile devam et',
+        subtitle:
+          'Ücretsiz yolculuk ilk 5 dersle sınırlı. 6. derse devam etmek için Premium gerekir.',
+      });
       return;
     }
 
-    const status = getLessonStatus(index, lesson.id);
+    const status = getLessonStatus(index, lesson.id, lesson);
+    if (status === 'LOCKED') return;
 
-    if (status !== 'LOCKED') {
-      playSound('correct', { volume: 0.22, maxDurationMs: 200 });
-      setTimeout(() => {
-        navigation.navigate('Lesson', {
-          lessonId: lesson.id,
-          lessonTitle: lesson.title,
-          unitId: unitId,
-          unitTitle: unitTitle,
-          entryStatus: status,
-        });
-      }, 60);
-      return;
-    }
-
-    navigation.navigate('Lesson', {
-      lessonId: lesson.id,
-      lessonTitle: lesson.title,
-      unitId: unitId,
-      unitTitle: unitTitle,
-      entryStatus: status,
-    });
+    playSound('correct', { volume: 0.22, maxDurationMs: 200 });
+    setTimeout(() => {
+      navigation.navigate('Lesson', {
+        lessonId: lesson.id,
+        lessonTitle: lesson.title,
+        unitId: unitId,
+        unitTitle: unitTitle,
+        entryStatus: status,
+      });
+    }, 60);
   };
 
   const handleLevelExamPress = () => {
-    if (!isPremium) {
-      openPaywall();
-      return;
-    }
-    if (!areAllLessonsCompleted) return;
+    if (!UNLOCK_ALL_FOR_TEST && !areAllLessonsCompleted) return;
     playSound('correct', { volume: 0.22, maxDurationMs: 200 });
     setTimeout(() => {
       navigation.navigate('LevelExam', {
@@ -237,17 +247,26 @@ export default function UnitDetailScreen({ route, navigation }: Props) {
     }, 60);
   };
 
-  const getLessonStatus = (index: number, lessonId: number): 'LOCKED' | 'ACTIVE' | 'COMPLETED' => {
-    if (isPremiumLockedLesson(index)) {
+  const getLessonStatus = (
+    index: number,
+    lessonId: number,
+    lesson: Lesson,
+  ): 'LOCKED' | 'ACTIVE' | 'COMPLETED' | 'PREMIUM' => {
+    if (index < 0) {
       return 'LOCKED';
     }
+    if (UNLOCK_ALL_FOR_TEST) {
+      return completedLessonIds.has(lessonId) ? 'COMPLETED' : 'ACTIVE';
+    }
 
-    // COMPLETED: Eğer ders tamamlananlar listesindeyse
     if (completedLessonIds.has(lessonId)) {
       return 'COMPLETED';
     }
 
-    // ACTIVE: Eğer ders tamamlanmamışsa VE (bir önceki ders tamamlanmışsa VEYA bu listenin ilk dersiyse)
+    if (isPremiumGateLesson(index, lesson)) {
+      return 'PREMIUM';
+    }
+
     if (index === 0) {
       return 'ACTIVE';
     }
@@ -257,7 +276,6 @@ export default function UnitDetailScreen({ route, navigation }: Props) {
       return 'ACTIVE';
     }
 
-    // LOCKED: Yukarıdakiler değilse
     return 'LOCKED';
   };
 
@@ -269,6 +287,7 @@ export default function UnitDetailScreen({ route, navigation }: Props) {
           id: `level-exam-${unitId}`,
           title: normalizeTr(levelExamTitle),
           description: 'Bir üst seviyeye geçiş için hazır mısın?',
+          icon_name: 'school-outline',
           type: 'LEVEL_EXAM',
         },
       ]
@@ -278,7 +297,7 @@ export default function UnitDetailScreen({ route, navigation }: Props) {
     if ('type' in item && item.type === 'LEVEL_EXAM') {
       const examStatus: 'LOCKED' | 'ACTIVE' | 'COMPLETED' = (levelExamPassed || runtimeExamPassed)
         ? 'COMPLETED'
-        : areAllLessonsCompleted
+        : (UNLOCK_ALL_FOR_TEST || areAllLessonsCompleted)
           ? 'ACTIVE'
           : 'LOCKED';
       return (
@@ -287,6 +306,7 @@ export default function UnitDetailScreen({ route, navigation }: Props) {
             id: -unitId,
             title: item.title,
             description: item.description,
+            icon_name: item.icon_name,
           }}
           index={index}
           totalLessons={listItems.length}
@@ -298,7 +318,7 @@ export default function UnitDetailScreen({ route, navigation }: Props) {
     }
 
     const lesson = item as Lesson;
-    const status = getLessonStatus(index, lesson.id);
+    const status = getLessonStatus(index, lesson.id, lesson);
     return (
       <LessonPathItem
         lesson={lesson}

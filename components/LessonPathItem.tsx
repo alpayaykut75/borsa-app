@@ -19,13 +19,16 @@ type Lesson = {
   title: string;
   description?: string;
   order_index?: number;
+  icon_name?: string;
 };
+
+export type LessonPathStatus = 'LOCKED' | 'ACTIVE' | 'COMPLETED' | 'PREMIUM';
 
 type LessonPathItemProps = {
   lesson: Lesson;
   index: number;
   totalLessons: number;
-  status: 'LOCKED' | 'ACTIVE' | 'COMPLETED';
+  status: LessonPathStatus;
   onPress: (lesson: Lesson) => void;
   hideActiveBadge?: boolean;
 };
@@ -39,13 +42,22 @@ export default function LessonPathItem({
   hideActiveBadge = false,
 }: LessonPathItemProps) {
   const isLast = index === totalLessons - 1;
-  const isLocked = status === 'LOCKED';
+  const isProgressLocked = status === 'LOCKED';
+  const isPremiumLocked = status === 'PREMIUM';
+  const isLocked = isProgressLocked || isPremiumLocked;
 
   const handlePress = () => {
-    if (!isLocked) {
+    if (!isProgressLocked) {
       onPress(lesson);
     }
   };
+  const normalizedTitle = (lesson.title || '').toLowerCase();
+  const isExamLike =
+    normalizedTitle.includes('ara değerlendirme') ||
+    normalizedTitle.includes('ara degerlendirme') ||
+    normalizedTitle.includes('sınav') ||
+    normalizedTitle.includes('sinav');
+  const examIconName = (lesson.icon_name || 'school-outline') as any;
 
   return (
     <View style={styles.container}>
@@ -80,6 +92,7 @@ export default function LessonPathItem({
             status === 'COMPLETED' && styles.timelineCircleCompleted,
             status === 'ACTIVE' && styles.timelineCircleActive,
             status === 'LOCKED' && styles.timelineCircleLocked,
+            status === 'PREMIUM' && styles.timelineCirclePremium,
           ]}
         >
           {status === 'COMPLETED' && (
@@ -91,6 +104,9 @@ export default function LessonPathItem({
           {status === 'LOCKED' && (
             <Ionicons name="lock-closed" size={16} color={palette.locked} />
           )}
+          {status === 'PREMIUM' && (
+            <Ionicons name="diamond" size={16} color={palette.accent} />
+          )}
         </View>
       </View>
 
@@ -99,17 +115,23 @@ export default function LessonPathItem({
         style={[
           styles.lessonCard,
           status === 'ACTIVE' && styles.lessonCardActive,
-          isLocked && styles.lessonCardLocked,
+          isPremiumLocked && styles.lessonCardPremium,
+          isProgressLocked && styles.lessonCardLocked,
         ]}
-        activeOpacity={isLocked ? 1 : 0.85}
+        activeOpacity={isProgressLocked ? 1 : 0.85}
         onPress={handlePress}
-        disabled={isLocked}
+        disabled={isProgressLocked}
       >
         <View style={styles.lessonContent}>
           <View style={styles.textContainer}>
             {status === 'ACTIVE' && !hideActiveBadge && (
               <View style={styles.nextLessonBadge}>
-                <Text style={styles.nextLessonBadgeText}>Aktif Ders</Text>
+                <Text style={styles.nextLessonBadgeText}>{isExamLike ? 'Aktif Sınav' : 'Aktif Ders'}</Text>
+              </View>
+            )}
+            {status === 'PREMIUM' && (
+              <View style={styles.premiumBadge}>
+                <Text style={styles.premiumBadgeText}>Premium ile devam et</Text>
               </View>
             )}
             <Text
@@ -118,7 +140,14 @@ export default function LessonPathItem({
                 isLocked && styles.lessonTitleLocked,
               ]}
             >
-              {lesson.title}
+              {isExamLike ? (
+                <>
+                  <Ionicons name={examIconName} size={16} color={palette.accent} />{' '}
+                  {lesson.title}
+                </>
+              ) : (
+                lesson.title
+              )}
             </Text>
             {!!lesson.description && (
               <Text
@@ -132,9 +161,9 @@ export default function LessonPathItem({
               </Text>
             )}
           </View>
-          {!isLocked && (
+          {!isProgressLocked && (
             <View style={styles.arrowContainer}>
-              <Ionicons name="chevron-forward" size={20} color={palette.muted} />
+              <Ionicons name="chevron-forward" size={20} color={isPremiumLocked ? palette.accent : palette.muted} />
             </View>
           )}
         </View>
@@ -215,6 +244,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#1A1A1A',
     borderColor: palette.locked,
   },
+  timelineCirclePremium: {
+    backgroundColor: '#1A1A1A',
+    borderColor: palette.accent,
+  },
   lessonCard: {
     flex: 1,
     backgroundColor: palette.card,
@@ -231,6 +264,25 @@ const styles = StyleSheet.create({
   },
   lessonCardLocked: {
     opacity: 0.72,
+  },
+  lessonCardPremium: {
+    borderColor: palette.accent,
+    borderWidth: 1,
+  },
+  premiumBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: palette.accent,
+    backgroundColor: 'rgba(0, 196, 204, 0.12)',
+    marginBottom: 8,
+  },
+  premiumBadgeText: {
+    fontSize: 11,
+    color: palette.accent,
+    fontWeight: '700',
   },
   lessonContent: {
     flexDirection: 'row',

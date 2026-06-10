@@ -37,7 +37,7 @@ type UnitPathItemProps = {
   unit: Unit;
   index: number;
   totalUnits: number;
-  status: 'LOCKED' | 'ACTIVE' | 'COMPLETED';
+  status: 'LOCKED' | 'ACTIVE' | 'COMPLETED' | 'PREMIUM';
   onPress: (unit: Unit) => void;
   completedLessons?: number;
   totalLessons?: number;
@@ -52,13 +52,15 @@ export default function UnitPathItem({
   completedLessons = 0,
   totalLessons = 0,
 }: UnitPathItemProps) {
-  const isLocked = status === 'LOCKED';
+  const isProgressLocked = status === 'LOCKED';
+  const isPremiumLocked = status === 'PREMIUM';
+  const isLocked = isProgressLocked || isPremiumLocked;
   const levelLockedImage = getLevelLockedImage(index);
-  const visibleCompletedLessons = isLocked ? 0 : completedLessons;
+  const visibleCompletedLessons = isProgressLocked ? 0 : completedLessons;
   const progress = totalLessons > 0 ? visibleCompletedLessons / totalLessons : 0;
 
   const handlePress = () => {
-    if (!isLocked) {
+    if (!isProgressLocked) {
       onPress(unit);
     }
   };
@@ -70,9 +72,9 @@ export default function UnitPathItem({
         status === 'ACTIVE' && styles.unitCardActive,
         isLocked && styles.unitCardLocked,
       ]}
-      activeOpacity={isLocked ? 1 : 0.85}
+      activeOpacity={isProgressLocked ? 1 : 0.85}
       onPress={handlePress}
-      disabled={isLocked}
+      disabled={isProgressLocked}
     >
       <View style={styles.unitContent}>
         {/* Icon Container */}
@@ -82,9 +84,14 @@ export default function UnitPathItem({
             style={[styles.levelImage, isLocked && styles.levelImageLocked]}
             resizeMode="cover"
           />
-          {isLocked && (
+          {isProgressLocked && (
             <View style={styles.lockBadge}>
               <Ionicons name="lock-closed" size={16} color={palette.locked} />
+            </View>
+          )}
+          {isPremiumLocked && (
+            <View style={[styles.lockBadge, styles.premiumBadge]}>
+              <Ionicons name="diamond" size={16} color={palette.accent} />
             </View>
           )}
         </View>
@@ -131,9 +138,9 @@ export default function UnitPathItem({
         </View>
 
         {/* Arrow */}
-        {!isLocked && (
+        {!isProgressLocked && (
           <View style={styles.arrowContainer}>
-            <Ionicons name="chevron-forward" size={20} color={palette.muted} />
+            <Ionicons name="chevron-forward" size={20} color={isPremiumLocked ? palette.accent : palette.muted} />
           </View>
         )}
       </View>
@@ -192,6 +199,10 @@ const styles = StyleSheet.create({
     borderColor: palette.border,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  premiumBadge: {
+    borderColor: palette.accent,
+    backgroundColor: 'rgba(0, 196, 204, 0.15)',
   },
   textContainer: {
     flex: 1,

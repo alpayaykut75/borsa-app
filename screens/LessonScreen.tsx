@@ -4,6 +4,7 @@ import {
   Alert,
   Animated,
   Dimensions,
+  Image,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -22,6 +23,9 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { supabase } from '../lib/supabase';
 import type { RootStackParamList } from '../App';
 import { useSfx } from '../src/hooks/useSfx';
+import { usePremium } from '../src/contexts/PremiumContext';
+import { HIDE_AUDIO_STEPS_TEMPORARILY } from '../src/constants/devFlags';
+import { isLastFreeLessonInFirstUnit } from '../src/constants/premium';
 
 const palette = {
   background: '#000000',
@@ -37,7 +41,6 @@ const palette = {
 
 const { width: windowWidth } = Dimensions.get('window');
 const flipCardWidth = Math.min(windowWidth - 40, 420);
-const HIDE_AUDIO_STEPS = false;
 
 type LessonStepType = 'read' | 'quiz' | 'flashcard' | 'audio' | 'final_quiz';
 
@@ -100,10 +103,29 @@ type FinalQuizState = {
   isSubmitted: boolean;
   score: number;
 };
+type AudioCheckpointState = {
+  visible: boolean;
+  stepId: number | null;
+  phase: 'choice' | 'question' | 'result';
+  isCorrect: boolean | null;
+};
 type Props = NativeStackScreenProps<RootStackParamList, 'Lesson'>;
 
 const getFinalQuestionKey = (question: FinalQuizQuestion, index: number): string =>
   question.id?.trim() || `q-${index}`;
+
+const getEffectivePassThreshold = (rawThreshold: unknown, questionCount: number): number => {
+  const defaultThreshold = 7;
+  const normalizedQuestionCount = Math.max(0, questionCount);
+  if (normalizedQuestionCount === 0) return defaultThreshold;
+
+  const parsed =
+    typeof rawThreshold === 'number' && Number.isFinite(rawThreshold) && rawThreshold > 0
+      ? Math.floor(rawThreshold)
+      : defaultThreshold;
+
+  return Math.min(parsed, normalizedQuestionCount);
+};
 
 const emojiMap: Record<string, string> = {
   handshake: '🤝',
@@ -138,6 +160,7 @@ export default function LessonScreen({ route, navigation }: Props) {
     score: 0,
   });
   const { playSound } = useSfx();
+  const { firstUnitId, isPremium } = usePremium();
   const [audioState, setAudioState] = useState<{
     sound: Audio.Sound | null;
     isPlaying: boolean;
@@ -151,6 +174,16 @@ export default function LessonScreen({ route, navigation }: Props) {
     position: 0,
     duration: 0,
   });
+  const [audioStartedStepIds, setAudioStartedStepIds] = useState<Record<number, boolean>>({});
+  const [audioRecapPassedStepIds, setAudioRecapPassedStepIds] = useState<Record<number, boolean>>({});
+  const [audioCheckpoint, setAudioCheckpoint] = useState<AudioCheckpointState>({
+    visible: false,
+    stepId: null,
+    phase: 'choice',
+    isCorrect: null,
+  });
+  const [flashcardFlipTick, setFlashcardFlipTick] = useState(0);
+  const [expandedWrongAnswers, setExpandedWrongAnswers] = useState<Record<string, boolean>>({});
   const flipAnimations = useRef<Record<number, Animated.Value>>({});
   const flippedState = useRef<Record<number, boolean>>({});
   const pulseAnimation = useRef(new Animated.Value(1)).current;
@@ -170,7 +203,7 @@ export default function LessonScreen({ route, navigation }: Props) {
     } else {
       const normalized = (data ?? [])
         .filter((step) => {
-          if (HIDE_AUDIO_STEPS && step.type === 'audio') return false;
+          if (HIDE_AUDIO_STEPS_TEMPORARILY && step.type === 'audio') return false;
           const meta = (step.metadata && typeof step.metadata === 'object') ? (step.metadata as Record<string, unknown>) : null;
           if (meta?.hidden_in_app === true) return false;
           if (step.type === 'final_quiz' && meta?.quiz_key === 'S1_LEVEL_FINAL') return false;
@@ -215,6 +248,15 @@ export default function LessonScreen({ route, navigation }: Props) {
         selectedAnswers: {},
         isSubmitted: false,
         score: 0,
+      });
+      setExpandedWrongAnswers({});
+      setAudioStartedStepIds({});
+      setAudioRecapPassedStepIds({});
+      setAudioCheckpoint({
+        visible: false,
+        stepId: null,
+        phase: 'choice',
+        isCorrect: null,
       });
       flipAnimations.current = {};
       flippedState.current = {};
@@ -298,10 +340,15 @@ export default function LessonScreen({ route, navigation }: Props) {
   const stepHeaderText = steps.length > 0
     ? `Adım ${Math.min(currentIndex + 1, steps.length)} / ${steps.length}`
     : 'Adım 0 / 0';
+  const headerSubtitleText =
+    currentStep?.type === 'final_quiz' && finalQuizState.isSubmitted
+      ? 'Bölüm Sonu Testi • Sonuç'
+      : stepHeaderText;
 
   const canContinue = useMemo(() => {
     if (!currentStep) return false;
     if (currentStep.type === 'quiz') return quizState.isCorrect === true;
+    if (currentStep.type === 'flashcard') return Boolean(flippedState.current[currentStep.id]);
     if (currentStep.type === 'final_quiz') {
       const metadata = currentStep.metadata || {};
       const questions = Array.isArray(metadata.questions) ? metadata.questions : [];
@@ -315,7 +362,7 @@ export default function LessonScreen({ route, navigation }: Props) {
       return Boolean(finalQuizState.selectedAnswers[currentQuestionKey]);
     }
     return true;
-  }, [currentStep, quizState, finalQuizState]);
+  }, [currentStep, quizState, finalQuizState, flashcardFlipTick]);
 
   const handleOptionSelect = (selectedOptionId: string, correctOptionId?: string) => {
     if (quizState.isCorrect) return;
@@ -327,7 +374,7 @@ export default function LessonScreen({ route, navigation }: Props) {
     }
 
     const isCorrect = selectedOptionId === correctOptionId;
-    setQuizState({ selectedOptionId, isCorrect, feedback: isCorrect ? 'Doğru! 🎉' : 'Yanlış. Tekrar dene.' });
+    setQuizState({ selectedOptionId, isCorrect });
 
     if (isCorrect) {
       playSound('correct');
@@ -357,6 +404,8 @@ export default function LessonScreen({ route, navigation }: Props) {
       isSubmitted: false,
       score: 0,
     });
+    setExpandedWrongAnswers({});
+    setAudioRecapPassedStepIds({});
   };
 
   const completeLessonAndNavigate = useCallback(async () => {
@@ -387,10 +436,20 @@ export default function LessonScreen({ route, navigation }: Props) {
 
     let isUnitCompleted = false;
     let hasNextLessonInUnit = false;
+    let showFreeTierEndPaywall = false;
     if (unitId) {
+      const isCheckpointExamLesson = (lesson: { title?: string | null; icon_name?: string | null }) => {
+        const title = (lesson.title || '').toLowerCase();
+        return (
+          title.includes('ara değerlendirme') ||
+          title.includes('ara degerlendirme') ||
+          lesson.icon_name === 'medal-outline' ||
+          lesson.icon_name === 'document-text-outline'
+        );
+      };
       const { data: unitLessonsData } = await supabase
         .from('lessons')
-        .select('id, sort_order')
+        .select('id, sort_order, title, icon_name')
         .eq('unit_id', unitId);
 
       const sortedUnitLessons = [...(unitLessonsData ?? [])].sort(
@@ -400,6 +459,17 @@ export default function LessonScreen({ route, navigation }: Props) {
       const currentLessonIndex = sortedUnitLessons.findIndex((lesson) => lesson.id === lessonId);
       hasNextLessonInUnit =
         currentLessonIndex >= 0 && currentLessonIndex < sortedUnitLessons.length - 1;
+
+      const currentLesson = currentLessonIndex >= 0 ? sortedUnitLessons[currentLessonIndex] : null;
+      const coreLessons = sortedUnitLessons.filter((lesson) => !isCheckpointExamLesson(lesson));
+      const currentCoreLessonIndex = currentLesson
+        ? coreLessons.findIndex((lesson) => lesson.id === currentLesson.id)
+        : -1;
+
+      showFreeTierEndPaywall =
+        !isPremium &&
+        currentCoreLessonIndex >= 0 &&
+        isLastFreeLessonInFirstUnit(unitId, currentCoreLessonIndex, firstUnitId);
 
       if (unitLessonIds.length > 0) {
         const { data: completedUnitLessonsData } = await supabase
@@ -421,6 +491,7 @@ export default function LessonScreen({ route, navigation }: Props) {
         unitTitle: unitTitle,
         isUnitCompleted,
         forceReturnToUnitDetail,
+        showFreeTierEndPaywall,
       });
     } else {
       navigation.replace('Completion', {
@@ -428,9 +499,50 @@ export default function LessonScreen({ route, navigation }: Props) {
         unitTitle: 'Dersler',
         isUnitCompleted: false,
         forceReturnToUnitDetail,
+        showFreeTierEndPaywall: false,
       });
     }
-  }, [lessonId, unitId, unitTitle, entryStatus, navigation]);
+  }, [lessonId, unitId, unitTitle, entryStatus, navigation, isPremium, firstUnitId]);
+
+  const goToNextRegularStep = async () => {
+    if (currentIndex === steps.length - 1) {
+      playSound('complete');
+      await completeLessonAndNavigate();
+      return;
+    }
+
+    playSound('correct', { volume: 0.2, maxDurationMs: 180 });
+    setCurrentIndex((prev) => prev + 1);
+    setQuizState({});
+    setFinalQuizState({
+      hasStarted: false,
+      currentQuestionIndex: 0,
+      selectedAnswers: {},
+      isSubmitted: false,
+      score: 0,
+    });
+  };
+
+  const handleAudioCheckpointAnswer = (isCorrect: boolean) => {
+    if (!currentStep || currentStep.type !== 'audio') return;
+    setAudioRecapPassedStepIds((prev) => ({ ...prev, [currentStep.id]: true }));
+    setAudioCheckpoint({
+      visible: true,
+      stepId: currentStep.id,
+      phase: 'result',
+      isCorrect,
+    });
+  };
+
+  const handleAudioCheckpointContinue = async () => {
+    setAudioCheckpoint({
+      visible: false,
+      stepId: null,
+      phase: 'choice',
+      isCorrect: null,
+    });
+    await goToNextRegularStep();
+  };
 
   const handleNext = async () => {
     if (!currentStep) return;
@@ -438,7 +550,7 @@ export default function LessonScreen({ route, navigation }: Props) {
     if (currentStep.type === 'final_quiz') {
       const metadata = currentStep.metadata || {};
       const questions = Array.isArray(metadata.questions) ? metadata.questions : [];
-      const passThreshold = metadata.pass_threshold ?? 7;
+      const passThreshold = getEffectivePassThreshold(metadata.pass_threshold, questions.length);
 
       if (!finalQuizState.hasStarted) {
         setFinalQuizState((prev) => ({
@@ -469,10 +581,9 @@ export default function LessonScreen({ route, navigation }: Props) {
           isSubmitted: true,
           score,
         }));
+        setExpandedWrongAnswers({});
 
-        if (score >= passThreshold) {
-          playSound('complete');
-        } else {
+        if (score < passThreshold) {
           playSound('error');
         }
         return;
@@ -493,23 +604,21 @@ export default function LessonScreen({ route, navigation }: Props) {
       return;
     }
 
-    // Son adımdaysa ders tamamlandı (final_quiz dışındaki son adımlar: okuma, ses vb.)
-    if (currentIndex === steps.length - 1) {
-      playSound('complete');
-      await completeLessonAndNavigate();
+    if (
+      currentStep.type === 'audio' &&
+      !audioStartedStepIds[currentStep.id] &&
+      !audioRecapPassedStepIds[currentStep.id]
+    ) {
+      setAudioCheckpoint({
+        visible: true,
+        stepId: currentStep.id,
+        phase: 'choice',
+        isCorrect: null,
+      });
       return;
     }
-    
-    playSound('correct', { volume: 0.2, maxDurationMs: 180 });
-    setCurrentIndex((prev) => prev + 1);
-    setQuizState({});
-    setFinalQuizState({
-      hasStarted: false,
-      currentQuestionIndex: 0,
-      selectedAnswers: {},
-      isSubmitted: false,
-      score: 0,
-    });
+
+    await goToNextRegularStep();
   };
 
   const handleLessonBackPress = () => {
@@ -561,6 +670,7 @@ export default function LessonScreen({ route, navigation }: Props) {
       useNativeDriver: false,
     }).start();
     flippedState.current[stepId] = nextState;
+    setFlashcardFlipTick((prev) => prev + 1);
   };
 
   const renderStepTitle = (title?: string | null) => {
@@ -602,7 +712,6 @@ export default function LessonScreen({ route, navigation }: Props) {
     const rawOptions = metadata.options || [];
     // Use correct_option_id (new format) or fallback to correctAnswer (legacy)
     const correctOptionId = metadata.correct_option_id || (typeof metadata.correctAnswer === 'string' ? metadata.correctAnswer : undefined);
-    const explanation = metadata.explanation;
 
     // Normalize options: handle both old format (string[]) and new format (QuizOption[])
     const options = rawOptions.map((opt, index) => {
@@ -613,6 +722,76 @@ export default function LessonScreen({ route, navigation }: Props) {
       // New format: { id, text }
       return opt as QuizOption;
     });
+
+    const title = (step.title || '').toLowerCase();
+    const isSentenceCompletion =
+      title.includes('cümle tamamlama') || title.includes('cumle tamamlama');
+    const cleanedQuestion = question.replace(/^cümleyi tamamla:\s*/i, '').replace(/^cumleyi tamamla:\s*/i, '');
+    const selectedOptionText =
+      options.find((option) => option.id === quizState.selectedOptionId)?.text || '____';
+    const renderedSentence = cleanedQuestion.includes('____')
+      ? cleanedQuestion.replace('____', selectedOptionText)
+      : cleanedQuestion;
+
+    if (isSentenceCompletion) {
+      return (
+        <View style={styles.card}>
+          <Text style={styles.stepTag}>Cümle Tamamlama</Text>
+          {!!question && (
+            cleanedQuestion.includes('____') && quizState.selectedOptionId ? (
+              (() => {
+                const parts = cleanedQuestion.split('____');
+                const before = parts[0] ?? '';
+                const after = parts[1] ?? '';
+                return (
+                  <Text style={styles.sentenceCompletionText}>
+                    {before}
+                    <Text
+                      style={
+                        quizState.isCorrect
+                          ? styles.sentenceInlineWordCorrect
+                          : styles.sentenceInlineWordWrong
+                      }
+                    >
+                      {selectedOptionText}
+                    </Text>
+                    {after}
+                  </Text>
+                );
+              })()
+            ) : (
+              <Text style={styles.sentenceCompletionText}>
+                {quizState.selectedOptionId ? renderedSentence : cleanedQuestion}
+              </Text>
+            )
+          )}
+          <View style={styles.sentenceOptionsGrid}>
+            {options.map((option, index) => {
+              const selected = quizState.selectedOptionId === option.id;
+              const isCorrectOption = quizState.isCorrect && selected;
+              const isWrongOption = quizState.isCorrect === false && selected;
+
+              return (
+                <TouchableOpacity
+                  key={option.id || `opt-${index}`}
+                  style={[
+                    styles.sentenceOptionChip,
+                    selected && styles.optionButtonSelected,
+                    isCorrectOption && styles.optionButtonCorrect,
+                    isWrongOption && styles.optionButtonWrong,
+                  ]}
+                  activeOpacity={0.85}
+                  onPress={() => handleOptionSelect(option.id, correctOptionId)}
+                  disabled={quizState.isCorrect === true}
+                >
+                  <Text style={styles.sentenceOptionChipText}>{option.text}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+      );
+    }
 
     return (
       <View style={styles.card}>
@@ -644,19 +823,6 @@ export default function LessonScreen({ route, navigation }: Props) {
             );
           })}
         </View>
-        {!!quizState.feedback && (
-          <Text
-            style={[styles.feedbackText, quizState.isCorrect ? styles.feedbackSuccess : styles.feedbackError]}
-          >
-            {quizState.feedback}
-          </Text>
-        )}
-        {quizState.isCorrect && explanation && (
-          <View style={styles.explanationContainer}>
-            <Text style={styles.explanationLabel}>Açıklama:</Text>
-            <Text style={styles.explanationText}>{explanation}</Text>
-          </View>
-        )}
       </View>
     );
   };
@@ -721,6 +887,9 @@ export default function LessonScreen({ route, navigation }: Props) {
     }
 
     try {
+      if (currentStep?.id) {
+        setAudioStartedStepIds((prev) => ({ ...prev, [currentStep.id]: true }));
+      }
       if (audioState.isPlaying && audioState.sound) {
         await audioState.sound.pauseAsync();
         setAudioState((prev) => ({ ...prev, isPlaying: false }));
@@ -840,7 +1009,15 @@ export default function LessonScreen({ route, navigation }: Props) {
   const renderFinalQuizStep = (step: LessonStep) => {
     const metadata = step.metadata || {};
     const questions = Array.isArray(metadata.questions) ? metadata.questions : [];
-    const passThreshold = metadata.pass_threshold ?? 7;
+    const passThreshold = getEffectivePassThreshold(metadata.pass_threshold, questions.length);
+    const normalizedTitle = (step.title || '').toLowerCase();
+    const isCheckpointExam =
+      normalizedTitle.includes('ara değerlendirme') ||
+      normalizedTitle.includes('ara degerlendirme');
+    const isLevelEndExam =
+      normalizedTitle.includes('seviye') ||
+      normalizedTitle.includes('geçiş') ||
+      normalizedTitle.includes('gecis');
 
     if (questions.length === 0) {
       return (
@@ -851,12 +1028,18 @@ export default function LessonScreen({ route, navigation }: Props) {
     }
 
     if (!finalQuizState.hasStarted) {
+      const introTag = isCheckpointExam
+        ? 'Ara Değerlendirme'
+        : isLevelEndExam
+          ? 'Seviye Sonu Sınavı'
+          : 'Bölüm Sonu Testi';
       return (
         <View style={styles.card}>
-          <Text style={styles.stepTag}>Bölüm Sonu Testi</Text>
+          <Text style={styles.stepTag}>{introTag}</Text>
           <Text style={styles.stepTitle}>Hazır mısın Ortak?</Text>
           <Text style={styles.explanationText}>
-            Şimdi 10 soruluk bölüm sonu testine geçiyoruz. En az 7 doğru yaptığında bölümü geçeceksin.
+            {`Şimdi ${questions.length} soruluk ${introTag.toLowerCase()} bölümüne geçiyoruz. En az ${passThreshold} doğru yaptığında geçeceksin.`}
+            {' '}
             Sakin kal, soruları dikkatle oku ve kendi yorumuna güven.
           </Text>
         </View>
@@ -869,6 +1052,7 @@ export default function LessonScreen({ route, navigation }: Props) {
         const selected = finalQuizState.selectedAnswers[questionKey];
         return selected !== question.correct_option_id;
       });
+      const wrongCount = Math.max(questions.length - finalQuizState.score, 0);
 
       return (
         <View style={styles.card}>
@@ -881,6 +1065,20 @@ export default function LessonScreen({ route, navigation }: Props) {
               ? `Tebrikler Ortak, testi geçtin.`
               : `Bu tur ${passThreshold}/${questions.length} barajını geçemedin. Tekrar deneyelim.`}
           </Text>
+          <View style={styles.resultSummaryRow}>
+            <View style={styles.resultPill}>
+              <Text style={styles.resultPillLabel}>Doğru</Text>
+              <Text style={styles.resultPillValue}>{finalQuizState.score}</Text>
+            </View>
+            <View style={styles.resultPill}>
+              <Text style={styles.resultPillLabel}>Baraj</Text>
+              <Text style={styles.resultPillValue}>{passThreshold}</Text>
+            </View>
+            <View style={styles.resultPill}>
+              <Text style={styles.resultPillLabel}>Yanlış</Text>
+              <Text style={styles.resultPillValue}>{wrongCount}</Text>
+            </View>
+          </View>
 
           {finalQuizState.score < passThreshold && (
             <TouchableOpacity style={styles.secondaryButton} onPress={handleReviewLesson} activeOpacity={0.85}>
@@ -897,11 +1095,32 @@ export default function LessonScreen({ route, navigation }: Props) {
                 const selected = finalQuizState.selectedAnswers[questionKey];
                 const selectedText = question.options.find((opt) => opt.id === selected)?.text ?? 'Boş';
                 const correctText = question.options.find((opt) => opt.id === question.correct_option_id)?.text ?? '-';
+                const isExpanded = expandedWrongAnswers[questionKey] === true;
                 return (
                   <View key={`${questionKey}-wrong-${index}`} style={styles.wrongAnswerRow}>
-                    <Text style={styles.explanationText}>{index + 1}. {question.question}</Text>
-                    <Text style={styles.wrongAnswerText}>Senin cevabın: {selectedText}</Text>
-                    <Text style={styles.correctAnswerText}>Doğru cevap: {correctText}</Text>
+                    <TouchableOpacity
+                      style={styles.wrongAnswerHeader}
+                      activeOpacity={0.8}
+                      onPress={() =>
+                        setExpandedWrongAnswers((prev) => ({
+                          ...prev,
+                          [questionKey]: !isExpanded,
+                        }))
+                      }
+                    >
+                      <Text style={styles.explanationText}>{index + 1}. {question.question}</Text>
+                      <Ionicons
+                        name={isExpanded ? 'chevron-up' : 'chevron-down'}
+                        size={18}
+                        color={palette.muted}
+                      />
+                    </TouchableOpacity>
+                    {isExpanded ? (
+                      <View style={styles.wrongAnswerDetails}>
+                        <Text style={styles.wrongAnswerText}>Senin cevabın: {selectedText}</Text>
+                        <Text style={styles.correctAnswerText}>Doğru cevap: {correctText}</Text>
+                      </View>
+                    ) : null}
                   </View>
                 );
               })}
@@ -964,7 +1183,108 @@ export default function LessonScreen({ route, navigation }: Props) {
     }
   };
 
+  const renderAudioCheckpointModal = () => {
+    if (!audioCheckpoint.visible) return null;
+
+    return (
+      <View style={styles.audioCheckpointOverlay}>
+        <View style={styles.audioCheckpointCard}>
+          {audioCheckpoint.phase === 'choice' ? (
+            <>
+              <Image
+                source={require('../assets/moono-profile.png')}
+                style={styles.audioCheckpointAvatar}
+                resizeMode="cover"
+              />
+              <Text style={styles.audioCheckpointTitle}>Kısa Hatırlatma</Text>
+              <Text style={styles.audioCheckpointText}>
+                Ortak, senin için harika bir özet hazırladım. Bu adımı geçmeden önce şu soruyu cevapla.
+                {'\n\n'}
+                Sonra dönüp mutlaka dinle, çok faydasını göreceksin.
+              </Text>
+              <TouchableOpacity
+                style={styles.audioCheckpointContinueButton}
+                activeOpacity={0.9}
+                onPress={() =>
+                  setAudioCheckpoint((prev) => ({ ...prev, visible: false }))
+                }
+              >
+                <Text style={styles.audioCheckpointContinueButtonText}>Dur, dinleyeyim</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.audioCheckpointOption}
+                activeOpacity={0.85}
+                onPress={() =>
+                  setAudioCheckpoint((prev) => ({ ...prev, phase: 'question' }))
+                }
+              >
+                <Text style={styles.audioCheckpointOptionText}>Soruyu cevaplayıp geçeyim</Text>
+              </TouchableOpacity>
+            </>
+          ) : audioCheckpoint.phase === 'question' ? (
+            <>
+              <Image
+                source={require('../assets/moono-profile.png')}
+                style={styles.audioCheckpointAvatar}
+                resizeMode="cover"
+              />
+              <Text style={styles.audioCheckpointTitle}>Tamam Ortak</Text>
+              <Text style={styles.audioCheckpointText}>
+                O zaman tek bir soruyla geçebiliriz:
+              </Text>
+              <Text style={styles.audioCheckpointQuestion}>Borsanın ana mantığı nedir?</Text>
+
+              <TouchableOpacity
+                style={styles.audioCheckpointOption}
+                activeOpacity={0.8}
+                onPress={() => handleAudioCheckpointAnswer(true)}
+              >
+                <Text style={styles.audioCheckpointOptionText}>Şirket ve yatırımcıyı buluşturur</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.audioCheckpointOption}
+                activeOpacity={0.8}
+                onPress={() => handleAudioCheckpointAnswer(false)}
+              >
+                <Text style={styles.audioCheckpointOptionText}>Sadece şans oyunudur</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <>
+              <Text style={styles.audioCheckpointTitle}>
+                {audioCheckpoint.isCorrect ? 'Doğru' : 'Sorun Değil'}
+              </Text>
+              <Text style={styles.audioCheckpointText}>
+                {audioCheckpoint.isCorrect
+                  ? 'Aynen. Borsa alıcı ve satıcıyı buluşturan düzenli bir piyasadır. Devam edelim.'
+                  : 'Kısa not: Borsa şans oyunu değil; şirket ve yatırımcının buluştuğu düzenli bir piyasadır. Bu adımı geçelim, sonra bu özeti dinlemeyi unutma.'}
+              </Text>
+              <TouchableOpacity
+                style={styles.audioCheckpointContinueButton}
+                activeOpacity={0.9}
+                onPress={() => {
+                  void handleAudioCheckpointContinue();
+                }}
+              >
+                <Text style={styles.audioCheckpointContinueButtonText}>Devam Et</Text>
+              </TouchableOpacity>
+            </>
+          )}
+        </View>
+      </View>
+    );
+  };
+
   const renderBody = () => {
+    const currentFinalQuizQuestions =
+      currentStep?.type === 'final_quiz' && Array.isArray((currentStep.metadata || {}).questions)
+        ? (((currentStep.metadata || {}).questions as FinalQuizQuestion[]) ?? [])
+        : [];
+    const currentFinalQuizPassThreshold =
+      currentStep?.type === 'final_quiz'
+        ? getEffectivePassThreshold((currentStep.metadata || {}).pass_threshold, currentFinalQuizQuestions.length)
+        : 0;
+
     if (loading) {
       return (
         <View style={styles.centerContent}>
@@ -1025,7 +1345,7 @@ export default function LessonScreen({ route, navigation }: Props) {
           <Text style={styles.primaryButtonText}>
             {currentStep?.type === 'final_quiz'
               ? (finalQuizState.isSubmitted
-                  ? (finalQuizState.score >= (((currentStep.metadata || {}).pass_threshold) ?? 7) ? 'Bölümü Bitir' : 'Testi Tekrar Çöz')
+                  ? (finalQuizState.score >= currentFinalQuizPassThreshold ? 'Bölümü Bitir' : 'Testi Tekrar Çöz')
                   : (!finalQuizState.hasStarted
                       ? 'Teste Başla'
                       : (finalQuizState.currentQuestionIndex >= (((currentStep.metadata || {}).questions as FinalQuizQuestion[] | undefined)?.length ?? 1) - 1
@@ -1059,7 +1379,7 @@ export default function LessonScreen({ route, navigation }: Props) {
             >
               {lessonTitle || 'Ders'}
             </Text>
-            <Text style={styles.headerSubtitle}>{stepHeaderText}</Text>
+            <Text style={styles.headerSubtitle}>{headerSubtitleText}</Text>
           </View>
           <TouchableOpacity
             style={styles.closeLessonButton}
@@ -1071,6 +1391,7 @@ export default function LessonScreen({ route, navigation }: Props) {
           </TouchableOpacity>
         </View>
         {renderBody()}
+        {renderAudioCheckpointModal()}
       </View>
     </SafeAreaView>
   );
@@ -1288,16 +1609,53 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#2A2A2A',
   },
+  wrongAnswerHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  wrongAnswerDetails: {
+    marginTop: 8,
+    paddingLeft: 2,
+  },
   wrongAnswerText: {
     marginTop: 6,
     fontSize: 14,
-    color: '#FCA5A5',
+    color: '#F59E0B',
   },
   correctAnswerText: {
     marginTop: 4,
     fontSize: 14,
     color: '#86EFAC',
     fontWeight: '600',
+  },
+  resultSummaryRow: {
+    marginTop: 14,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  resultPill: {
+    flex: 1,
+    backgroundColor: '#13181D',
+    borderColor: '#2A2A2A',
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+  },
+  resultPillLabel: {
+    color: palette.muted,
+    fontSize: 12,
+    textAlign: 'center',
+    marginBottom: 2,
+  },
+  resultPillValue: {
+    color: palette.text,
+    fontSize: 18,
+    fontWeight: '700',
+    textAlign: 'center',
   },
   feedbackText: {
     marginTop: 16,
@@ -1468,5 +1826,126 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '800',
     letterSpacing: 1,
+  },
+  audioCheckpointOverlay: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.72)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    zIndex: 20,
+  },
+  audioCheckpointCard: {
+    width: '100%',
+    maxWidth: 440,
+    backgroundColor: '#101214',
+    borderColor: '#2A2A2A',
+    borderWidth: 1,
+    borderRadius: 18,
+    padding: 18,
+  },
+  audioCheckpointTitle: {
+    color: '#FFFFFF',
+    fontSize: 24,
+    fontWeight: '800',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  audioCheckpointAvatar: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignSelf: 'center',
+    marginBottom: 10,
+    borderWidth: 2,
+    borderColor: '#00C4CC',
+  },
+  audioCheckpointText: {
+    color: '#D1D5DB',
+    fontSize: 16,
+    lineHeight: 22,
+    textAlign: 'center',
+    marginBottom: 14,
+  },
+  audioCheckpointQuestion: {
+    color: '#00C4CC',
+    fontSize: 18,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  audioCheckpointOption: {
+    borderWidth: 1,
+    borderColor: '#00C4CC',
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    marginTop: 10,
+  },
+  audioCheckpointOptionText: {
+    color: '#FFFFFF',
+    textAlign: 'center',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  audioCheckpointContinueButton: {
+    marginTop: 8,
+    backgroundColor: '#00C4CC',
+    borderRadius: 12,
+    paddingVertical: 14,
+  },
+  audioCheckpointContinueButtonText: {
+    color: '#000000',
+    textAlign: 'center',
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  sentenceCompletionText: {
+    color: '#FFFFFF',
+    fontSize: 24,
+    lineHeight: 34,
+    textAlign: 'center',
+    fontWeight: '700',
+    marginBottom: 18,
+  },
+  sentenceCompletionCorrect: {
+    color: '#22C55E',
+  },
+  sentenceCompletionWrong: {
+    color: '#F87171',
+  },
+  sentenceInlineWordCorrect: {
+    color: '#22C55E',
+    fontWeight: '800',
+  },
+  sentenceInlineWordWrong: {
+    color: '#F87171',
+    fontWeight: '800',
+  },
+  sentenceOptionsGrid: {
+    width: '100%',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    rowGap: 10,
+  },
+  sentenceOptionChip: {
+    width: '48%',
+    borderWidth: 1,
+    borderColor: palette.border,
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 10,
+    backgroundColor: '#111111',
+  },
+  sentenceOptionChipText: {
+    color: '#FFFFFF',
+    textAlign: 'center',
+    fontSize: 15,
+    fontWeight: '700',
   },
 });

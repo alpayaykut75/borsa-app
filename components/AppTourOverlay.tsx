@@ -12,9 +12,11 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
+import { FREE_LESSONS_IN_FIRST_UNIT } from '../src/constants/premium';
 
 const { height: SCREEN_H } = Dimensions.get('window');
 const TOUR_SEEN_KEY = 'moono_app_tour_seen';
+const HUB_UNLOCK_LESSONS = 5;
 
 const palette = {
   accent: '#00C4CC',
@@ -48,6 +50,13 @@ const STEPS: StepConfig[] = [
     cardPosition: 'bottom',
   },
   {
+    icon: 'grid-outline',
+    title: 'Gelisim ve Kartlar',
+    description: `Kelime Kartlarim ve Gelisim Merkezi ilk ${HUB_UNLOCK_LESSONS} dersi tamamlayinca acilir.`,
+    buttonText: 'Devam →',
+    cardPosition: 'bottom',
+  },
+  {
     icon: 'sparkles',
     title: 'Moono Asistan',
     description: 'Yapay zeka asistanın! Merak ettiklerini buradan sor.',
@@ -57,7 +66,7 @@ const STEPS: StepConfig[] = [
   {
     icon: 'person-outline',
     title: 'Profil',
-    description: 'Bilgilerini düzenle ve ilerlemeni takip et.',
+    description: `Bilgilerini düzenle, ilerlemeni takip et. İlk ${FREE_LESSONS_IN_FIRST_UNIT} ders ücretsiz — devamı için istediğin zaman buradan Premium'a geçebilirsin.`,
     buttonText: 'Devam →',
     cardPosition: 'upper-center',
   },
@@ -164,17 +173,23 @@ export default function AppTourOverlay({ navigationRef, onFinish }: Props) {
       case 2:
         await navigateAndShow(() => {
           nav.navigate('Main', { screen: 'HomeStack', params: { screen: 'Home' } });
+        });
+        break;
+
+      case 3:
+        await navigateAndShow(() => {
+          nav.navigate('Main', { screen: 'HomeStack', params: { screen: 'Home' } });
           setTimeout(() => nav.navigate('Main', { screen: 'Assistant' }), 250);
         }, 700);
         break;
 
-      case 3:
+      case 4:
         await navigateAndShow(() => {
           nav.navigate('Main', { screen: 'Profile' });
         });
         break;
 
-      case 4:
+      case 5:
         await navigateAndShow(() => {
           nav.navigate('Main', { screen: 'HomeStack', params: { screen: 'Home' } });
         });

@@ -1,6 +1,6 @@
+import { useEffect, useState } from 'react';
 import { Image, StyleSheet, Text, View, type ImageSourcePropType, type ReactNode } from 'react-native';
-
-const NEON_CYAN = '#00C4CC';
+import { palette, typography } from '../src/constants/theme';
 
 export const TAB_HEADER_HORIZONTAL = 20;
 export const TAB_HEADER_AVATAR_SIZE = 56;
@@ -28,14 +28,27 @@ export default function TabScreenHeader({
   moonoAvatarCrop = false,
   trailing,
 }: TabScreenHeaderProps) {
-  const showEmoji = !avatarPhotoUri && !avatarImage && avatarEmoji;
+  const [photoLoadFailed, setPhotoLoadFailed] = useState(false);
+
+  useEffect(() => {
+    // Reset failure when user changes selected photo.
+    setPhotoLoadFailed(false);
+  }, [avatarPhotoUri]);
+
+  const canUsePhoto = Boolean(avatarPhotoUri) && !photoLoadFailed;
+  const showEmoji = !canUsePhoto && !avatarImage && avatarEmoji;
 
   return (
     <View style={styles.header}>
       <View style={styles.main}>
         <View style={styles.avatarContainer}>
-          {avatarPhotoUri ? (
-            <Image source={{ uri: avatarPhotoUri }} style={styles.avatarFill} resizeMode="cover" />
+          {canUsePhoto ? (
+            <Image
+              source={{ uri: avatarPhotoUri! }}
+              style={styles.avatarFill}
+              resizeMode="cover"
+              onError={() => setPhotoLoadFailed(true)}
+            />
           ) : avatarImage ? (
             <Image
               source={avatarImage}
@@ -90,7 +103,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: NEON_CYAN,
+    borderColor: palette.accent,
     backgroundColor: '#0F0F0F',
     overflow: 'hidden',
   },
@@ -109,20 +122,17 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   title: {
-    color: '#FFFFFF',
-    fontSize: 26,
-    fontWeight: '700',
+    ...typography.h1,
+    color: palette.text,
     marginBottom: 4,
   },
   subtitle: {
-    color: '#888888',
-    fontSize: 16,
-    fontWeight: '500',
+    ...typography.bodySm,
+    color: palette.muted,
   },
   hint: {
-    color: NEON_CYAN,
-    fontSize: 13,
-    fontWeight: '500',
+    ...typography.caption,
+    color: palette.accent,
     marginTop: 4,
   },
   trailing: {

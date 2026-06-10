@@ -209,13 +209,13 @@ const styles = StyleSheet.create({
   },
   userText: {
     color: 'white',
-    fontSize: 17,
-    lineHeight: 26,
+    fontSize: 18,
+    lineHeight: 28,
   },
   moonoText: {
     color: 'white',
-    fontSize: 17,
-    lineHeight: 26,
+    fontSize: 18,
+    lineHeight: 28,
   },
   inputContainer: {
     flexDirection: 'row',
@@ -231,8 +231,8 @@ const styles = StyleSheet.create({
     color: 'white',
     padding: 12,
     borderRadius: 25,
-    fontSize: 17,
-    lineHeight: 22,
+    fontSize: 18,
+    lineHeight: 24,
     marginRight: 10,
     minHeight: 50,
   },

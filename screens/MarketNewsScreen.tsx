@@ -17,6 +17,7 @@ import TabScreenHeader from '../components/TabScreenHeader';
 import { fetchMarketTurkey, type MarketQuoteCard } from '../src/services/marketTurkeyService';
 import { fetchMoonoDailyBrief, type MoonoDailyBriefPayload } from '../src/services/moonoDailyBriefService';
 import { MOONO_CHARACTER_AVATAR } from '../src/constants/avatars';
+import { spacing, typography } from '../src/constants/theme';
 import {
   briefStatusHint,
   formatQuotesUpdatedTr,
@@ -37,7 +38,7 @@ const palette = {
   border: '#333333',
   accent: NEON_CYAN,
   text: '#FFFFFF',
-  muted: '#888888',
+  muted: '#8A8A8A',
   danger: '#EF4444',
   upBg: '#0D2E2A',
   downBg: '#2E1518',
@@ -341,7 +342,7 @@ export default function MarketNewsScreen() {
             </View>
           </>
         ) : (
-          <View style={[styles.briefCard, { marginHorizontal: 20 }]}>
+          <View style={[styles.briefCard, { marginHorizontal: spacing.lg }]}>
             <Text style={styles.moonoFallback}>{moonoError ?? 'Özet hazırlanıyor.'}</Text>
           </View>
         )}
@@ -355,12 +356,11 @@ export default function MarketNewsScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: palette.background },
   center: { justifyContent: 'center', alignItems: 'center' },
-  stateText: { marginTop: 12, color: palette.muted, fontSize: 14 },
+  stateText: { ...typography.body, marginTop: 12, color: palette.muted },
   scroll: { flex: 1 },
   scrollContent: { paddingHorizontal: 0, paddingBottom: 120 },
   briefDateLine: {
-    fontSize: 13,
-    fontWeight: '600',
+    ...typography.bodySm,
     color: palette.muted,
     marginBottom: 14,
   },
@@ -371,37 +371,34 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 10,
     marginBottom: 4,
-    paddingHorizontal: 20,
+    paddingHorizontal: spacing.lg,
   },
   quotesUpdated: {
-    fontSize: 11,
+    ...typography.caption,
     color: palette.muted,
-    paddingHorizontal: 20,
+    paddingHorizontal: spacing.lg,
     marginTop: 6,
     marginBottom: 4,
   },
   metricTile: {
     width: '48%',
     borderRadius: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 12,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.sm,
     borderWidth: 1,
     borderColor: palette.border,
     minHeight: 96,
   },
   metricLabel: {
-    fontSize: 10,
-    fontWeight: '700',
+    ...typography.caption,
     marginBottom: 4,
   },
   metricValue: {
-    fontSize: 16,
-    fontWeight: '800',
+    ...typography.h3,
     color: palette.text,
   },
   metricChange: {
-    fontSize: 10,
-    fontWeight: '700',
+    ...typography.caption,
     marginTop: 6,
     lineHeight: 14,
   },
@@ -415,7 +412,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderColor: palette.border,
-    marginHorizontal: 20,
+    marginHorizontal: spacing.lg,
     marginBottom: 16,
     padding: 20,
   },
@@ -433,17 +430,16 @@ const styles = StyleSheet.create({
     color: palette.accent,
   },
   briefBody: {
-    fontSize: 16,
-    lineHeight: 26,
+    fontSize: 18,
+    lineHeight: 28,
     color: palette.text,
     fontWeight: '400',
     marginBottom: 14,
   },
   briefMeta: {
-    fontSize: 12,
+    ...typography.bodySm,
     lineHeight: 18,
     color: palette.muted,
-    fontWeight: '500',
   },
   briefSectionLabel: {
     fontSize: 18,
@@ -453,19 +449,19 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   footerDisclaimerPlain: {
-    marginHorizontal: 20,
+    marginHorizontal: spacing.lg,
     marginTop: 12,
     marginBottom: 32,
-    fontSize: 11,
+    ...typography.caption,
     lineHeight: 18,
     color: palette.muted,
   },
   moonoFallback: {
     color: palette.muted,
-    fontSize: 15,
+    ...typography.body,
     lineHeight: 22,
   },
-  placeholder: { color: palette.muted, fontSize: 13, marginBottom: 8, paddingHorizontal: 20 },
+  placeholder: { ...typography.bodySm, color: palette.muted, marginBottom: spacing.xs, paddingHorizontal: spacing.lg },
   errorBanner: {
     marginHorizontal: 16,
     marginBottom: 6,
@@ -475,5 +471,5 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: palette.border,
   },
-  errorText: { color: palette.danger, fontWeight: '700', fontSize: 13 },
+  errorText: { ...typography.bodySm, color: palette.danger },
 });

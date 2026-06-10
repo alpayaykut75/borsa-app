@@ -9,6 +9,9 @@ import { Ionicons } from '@expo/vector-icons';
 
 import AnimatedSplash from './components/AnimatedSplash';
 import HomeScreen from './screens/HomeScreen';
+import ShortsScreen from './screens/ShortsScreen';
+import GrowthCenterScreen from './screens/GrowthCenterScreen';
+import FlashcardLibraryScreen from './screens/FlashcardLibraryScreen';
 import LessonScreen from './screens/LessonScreen';
 import UnitDetailScreen from './screens/UnitDetailScreen';
 import AIScreen from './src/screens/AIScreen';
@@ -42,6 +45,8 @@ export type RootStackParamList = {
     isUnitCompleted?: boolean;
     forceReturnToUnitDetail?: boolean;
     levelExamPassed?: boolean;
+    /** Seviye 1, 5. ders bitti — ücretsiz bölüm sonu */
+    showFreeTierEndPaywall?: boolean;
   };
   LevelExam: {
     unitId: number;
@@ -52,12 +57,15 @@ export type RootStackParamList = {
 export type HomeStackParamList = {
   Home: undefined;
   UnitDetail: { unitId: number; unitTitle: string; levelExamPassed?: boolean };
+  GrowthCenter: undefined;
+  FlashcardLibrary: undefined;
+  MarketNews: undefined;
 };
 
 export type MainTabParamList = {
   HomeStack: undefined;
+  Shorts: undefined;
   Assistant: undefined;
-  MarketNews: undefined;
   Profile: undefined;
 };
 
@@ -81,6 +89,18 @@ function HomeStack() {
       <HomeStackNavigator.Screen
         name="UnitDetail"
         component={UnitDetailScreen}
+      />
+      <HomeStackNavigator.Screen
+        name="GrowthCenter"
+        component={GrowthCenterScreen}
+      />
+      <HomeStackNavigator.Screen
+        name="FlashcardLibrary"
+        component={FlashcardLibraryScreen}
+      />
+      <HomeStackNavigator.Screen
+        name="MarketNews"
+        component={MarketNewsScreen}
       />
     </HomeStackNavigator.Navigator>
   );
@@ -123,22 +143,22 @@ function MainTabs() {
         })}
       />
       <Tab.Screen
+        name="Shorts"
+        component={ShortsScreen}
+        options={{
+          tabBarLabel: 'Shorts',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="play-circle" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
         name="Assistant"
         component={AIScreen}
         options={{
           tabBarLabel: 'Moono',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="sparkles" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="MarketNews"
-        component={MarketNewsScreen}
-        options={{
-          tabBarLabel: 'Piyasa',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="newspaper-outline" size={size} color={color} />
           ),
         }}
       />

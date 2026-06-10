@@ -24,14 +24,31 @@ export function isLessonInFreeTier(
   return lessonIndex < FREE_LESSONS_IN_FIRST_UNIT;
 }
 
+/** Yalnızca Seviye 1'in 6. dersi (indeks 5) — sonraki dersler normal kilit */
+export function isSixthLessonPremiumGate(
+  unitId: number,
+  lessonIndex: number,
+  firstUnitId: number | null,
+): boolean {
+  if (firstUnitId === null || unitId !== firstUnitId) return false;
+  return lessonIndex === FREE_LESSONS_IN_FIRST_UNIT;
+}
+
+/** @deprecated isSixthLessonPremiumGate kullan */
 export function isLessonPremiumGated(
   unitId: number,
   lessonIndex: number,
-  firstUnitId: number | null
+  firstUnitId: number | null,
 ): boolean {
-  return !isLessonInFreeTier(unitId, lessonIndex, firstUnitId);
+  return isSixthLessonPremiumGate(unitId, lessonIndex, firstUnitId);
 }
 
-export function isUnitPremiumGated(unitIndex: number): boolean {
-  return unitIndex > 0;
+/** Son ücretsiz dersin indeksi (Seviye 1, 5. ders = 4) */
+export function isLastFreeLessonInFirstUnit(
+  unitId: number,
+  lessonIndex: number,
+  firstUnitId: number | null,
+): boolean {
+  if (firstUnitId === null || unitId !== firstUnitId) return false;
+  return lessonIndex === FREE_LESSONS_IN_FIRST_UNIT - 1;
 }

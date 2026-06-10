@@ -13,6 +13,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import type { RootStackParamList } from '../App';
 import { useSfx } from '../src/hooks/useSfx';
+import { usePremium } from '../src/contexts/PremiumContext';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Completion'>;
 type ConfettiPiece = {
@@ -57,9 +58,11 @@ export default function CompletionScreen({ route, navigation }: Props) {
     isUnitCompleted = false,
     forceReturnToUnitDetail = false,
     levelExamPassed = false,
+    showFreeTierEndPaywall = false,
   } = route.params;
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const { playSound } = useSfx();
+  const { openPaywall } = usePremium();
   const levelCharacterImage = getLevelCharacterImage(unitTitle, unitId);
   const confettiPieces = useMemo<ConfettiPiece[]>(
     () =>
@@ -203,19 +206,46 @@ export default function CompletionScreen({ route, navigation }: Props) {
           </Animated.View>
           
           <Text style={styles.title}>Görev Tamamlandı!</Text>
-          
+
           <Text style={styles.subtitle}>
-            Harika! Bir adım daha tamam. Kilidi açtın, devam!
+            {showFreeTierEndPaywall
+              ? 'Harika Ortak! Ücretsiz yolculuk buraya kadardı — ilk 5 dersi tamamladın. 6. dersten devam etmek için Premium’a geçmen gerekiyor.'
+              : 'Harika! Bir adım daha tamam. Kilidi açtın, devam!'}
           </Text>
         </View>
 
-        <TouchableOpacity
-          style={styles.button}
-          onPress={handleContinue}
-          activeOpacity={0.9}
-        >
-          <Text style={styles.buttonText}>Devam Et</Text>
-        </TouchableOpacity>
+        {showFreeTierEndPaywall ? (
+          <View style={styles.buttonGroup}>
+            <TouchableOpacity
+              style={styles.button}
+              onPress={() =>
+                openPaywall({
+                  title: 'Premium ile devam et',
+                  subtitle:
+                    '6. dersten itibaren tüm dersler, Moono asistanı ve seviye sınavları Premium ile açılır.',
+                })
+              }
+              activeOpacity={0.9}
+            >
+              <Text style={styles.buttonText}>Premium ile Devam Et</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.secondaryButton}
+              onPress={handleContinue}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.secondaryButtonText}>Şimdilik Dön</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <TouchableOpacity
+            style={styles.button}
+            onPress={handleContinue}
+            activeOpacity={0.9}
+          >
+            <Text style={styles.buttonText}>Devam Et</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -292,6 +322,22 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     letterSpacing: 0.5,
+  },
+  buttonGroup: {
+    width: '100%',
+    gap: 12,
+  },
+  secondaryButton: {
+    paddingVertical: 16,
+    borderRadius: 14,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: palette.accent,
+  },
+  secondaryButtonText: {
+    color: palette.accent,
+    fontSize: 16,
+    fontWeight: '700',
   },
 });
 

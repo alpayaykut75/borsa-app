@@ -23,6 +23,8 @@ const palette = {
 
 type Props = {
   visible: boolean;
+  title?: string;
+  subtitle?: string;
   priceString: string | null;
   purchaseError: string | null;
   isPurchasing: boolean;
@@ -40,6 +42,8 @@ const BENEFITS = [
 
 export default function PaywallModal({
   visible,
+  title,
+  subtitle,
   priceString,
   purchaseError,
   isPurchasing,
@@ -47,6 +51,10 @@ export default function PaywallModal({
   onPurchase,
   onRestore,
 }: Props) {
+  const displayTitle = title ?? 'Premium';
+  const displaySubtitle =
+    subtitle ??
+    `İlk ${FREE_LESSONS_IN_FIRST_UNIT} ders ücretsiz. Devam etmek için Premium al.`;
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <SafeAreaView style={styles.safe}>
@@ -59,10 +67,8 @@ export default function PaywallModal({
             <View style={styles.iconCircle}>
               <Ionicons name="diamond" size={36} color={palette.accent} />
             </View>
-            <Text style={styles.title}>Premium</Text>
-            <Text style={styles.subtitle}>
-              İlk {FREE_LESSONS_IN_FIRST_UNIT} ders ücretsiz. Devam etmek için Premium al.
-            </Text>
+            <Text style={styles.title}>{displayTitle}</Text>
+            <Text style={styles.subtitle}>{displaySubtitle}</Text>
           </View>
 
           <View style={styles.benefits}>
