@@ -24,7 +24,13 @@ import { supabase } from '../lib/supabase';
 import type { RootStackParamList } from '../App';
 import { useSfx } from '../src/hooks/useSfx';
 import { usePremium } from '../src/contexts/PremiumContext';
-import { HIDE_AUDIO_STEPS_TEMPORARILY } from '../src/constants/devFlags';
+import { HIDE_AUDIO_STEPS_TEMPORARILY, LESSONS_WITH_AUDIO_READY } from '../src/constants/devFlags';
+import {
+  AUDIO_CAPTION_WINDOW_WORDS,
+  AUDIO_STEP_HEADLINE,
+  AUDIO_STEP_SUBLINE,
+  LESSON_AUDIO_TRANSCRIPTS,
+} from '../src/constants/lessonAudioTranscripts';
 import { isLastFreeLessonInFirstUnit } from '../src/constants/premium';
 
 const palette = {
@@ -127,6 +133,61 @@ const getEffectivePassThreshold = (rawThreshold: unknown, questionCount: number)
   return Math.min(parsed, normalizedQuestionCount);
 };
 
+type AudioCaptionCue = {
+  start_ms: number;
+  end_ms: number;
+  text: string;
+};
+
+function parseAudioCaptions(metadata: Record<string, unknown> | null | undefined): AudioCaptionCue[] {
+  const raw = metadata?.captions;
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((item) => {
+      if (!item || typeof item !== 'object') return null;
+      const cue = item as Record<string, unknown>;
+      const text = typeof cue.text === 'string' ? cue.text.trim() : '';
+      const start_ms = Number(cue.start_ms ?? cue.startMs ?? 0);
+      const end_ms = Number(cue.end_ms ?? cue.endMs ?? 0);
+      if (!text || end_ms <= start_ms) return null;
+      return { start_ms, end_ms, text };
+    })
+    .filter((cue): cue is AudioCaptionCue => cue !== null);
+}
+
+function resolveAudioTranscriptText(
+  metadata: Record<string, unknown> | null | undefined,
+  stepLessonId: number,
+): string {
+  return (
+    (typeof metadata?.transcript === 'string' ? metadata.transcript : '') ||
+    LESSON_AUDIO_TRANSCRIPTS[stepLessonId] ||
+    ''
+  ).trim();
+}
+
+function tokenizeTranscript(text: string): string[] {
+  return text.split(/\s+/).filter(Boolean);
+}
+
+function getVisibleWordCount(position: number, duration: number, totalWords: number): number {
+  if (totalWords === 0) return 0;
+  if (duration <= 0) return 0;
+  const ratio = Math.min(1, Math.max(0, position / duration));
+  return Math.max(1, Math.ceil(ratio * totalWords));
+}
+
+function getActiveTimedCaptionIndex(position: number, timedCaptions: AudioCaptionCue[]): number {
+  const idx = timedCaptions.findIndex(
+    (cue) => position >= cue.start_ms && position < cue.end_ms,
+  );
+  if (idx >= 0) return idx;
+  if (position >= timedCaptions[timedCaptions.length - 1].end_ms) {
+    return timedCaptions.length - 1;
+  }
+  return 0;
+}
+
 const emojiMap: Record<string, string> = {
   handshake: '🤝',
   money: '💰',
@@ -184,6 +245,7 @@ export default function LessonScreen({ route, navigation }: Props) {
   });
   const [flashcardFlipTick, setFlashcardFlipTick] = useState(0);
   const [expandedWrongAnswers, setExpandedWrongAnswers] = useState<Record<string, boolean>>({});
+  const [isCompleting, setIsCompleting] = useState(false);
   const flipAnimations = useRef<Record<number, Animated.Value>>({});
   const flippedState = useRef<Record<number, boolean>>({});
   const pulseAnimation = useRef(new Animated.Value(1)).current;
@@ -205,7 +267,9 @@ export default function LessonScreen({ route, navigation }: Props) {
         .filter((step) => {
           if (HIDE_AUDIO_STEPS_TEMPORARILY && step.type === 'audio') return false;
           const meta = (step.metadata && typeof step.metadata === 'object') ? (step.metadata as Record<string, unknown>) : null;
-          if (meta?.hidden_in_app === true) return false;
+          const audioReady =
+            step.type === 'audio' && LESSONS_WITH_AUDIO_READY.includes(lessonId);
+          if (meta?.hidden_in_app === true && !audioReady) return false;
           if (step.type === 'final_quiz' && meta?.quiz_key === 'S1_LEVEL_FINAL') return false;
           return true;
         })
@@ -288,6 +352,7 @@ export default function LessonScreen({ route, navigation }: Props) {
     };
   }, [audioState.sound]);
 
+
   // Adım değişince sesi durdur
   useEffect(() => {
     const stopAudio = async () => {
@@ -335,6 +400,38 @@ export default function LessonScreen({ route, navigation }: Props) {
   }, [navigation]);
 
   const currentStep = steps[currentIndex];
+  const audioCaptionData = useMemo(() => {
+    if (currentStep?.type !== 'audio') return null;
+    const metadata = (currentStep.metadata || {}) as Record<string, unknown>;
+    const timedCaptions = parseAudioCaptions(metadata);
+
+    if (timedCaptions.length > 0) {
+      const lines = timedCaptions.map((cue) => cue.text);
+      const activeIndex = getActiveTimedCaptionIndex(audioState.position, timedCaptions);
+      return { mode: 'timed' as const, lines, activeIndex };
+    }
+
+    const transcriptText = resolveAudioTranscriptText(metadata, lessonId);
+    const words = tokenizeTranscript(transcriptText);
+    const hasStarted = audioState.isPlaying || audioState.position > 0;
+    const visibleWordCount = hasStarted
+      ? getVisibleWordCount(audioState.position, audioState.duration, words.length)
+      : 0;
+
+    return {
+      mode: 'words' as const,
+      words,
+      visibleWordCount,
+      activeWordIndex: Math.max(0, visibleWordCount - 1),
+      hasTranscript: words.length > 0,
+    };
+  }, [
+    currentStep,
+    lessonId,
+    audioState.position,
+    audioState.duration,
+    audioState.isPlaying,
+  ]);
   const isCompleted = !loading && steps.length > 0 && currentIndex >= steps.length;
   const progress = steps.length > 0 ? (currentIndex + 1) / steps.length : 0;
   const stepHeaderText = steps.length > 0
@@ -409,26 +506,40 @@ export default function LessonScreen({ route, navigation }: Props) {
   };
 
   const completeLessonAndNavigate = useCallback(async () => {
+    setIsCompleting(true);
+
     const {
       data: { user },
       error: authError,
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
+      setIsCompleting(false);
       Alert.alert('Hata', 'Kullanıcı bilgisi alınamadı. Lütfen tekrar giriş yapın.');
       return;
     }
 
-    const { error: progressError } = await supabase.from('user_progress').upsert(
-      {
-        user_id: user.id,
-        lesson_id: lessonId,
-        is_completed: true,
-      },
-      {
-        onConflict: 'user_id,lesson_id',
-      }
-    );
+    // Üç istek birbirinden bağımsız; paralel çalıştırarak bekleme süresini kısaltıyoruz.
+    // (Tamamlanan dersler sorgusu upsert'i beklemediği için mevcut ders aşağıda elle ekleniyor.)
+    const [{ error: progressError }, { data: unitLessonsData }, { data: completedLessonsData }] =
+      await Promise.all([
+        supabase.from('user_progress').upsert(
+          {
+            user_id: user.id,
+            lesson_id: lessonId,
+            is_completed: true,
+          },
+          {
+            onConflict: 'user_id,lesson_id',
+          }
+        ),
+        unitId
+          ? supabase.from('lessons').select('id, sort_order, title, icon_name').eq('unit_id', unitId)
+          : Promise.resolve({ data: null }),
+        unitId
+          ? supabase.from('user_progress').select('lesson_id').eq('user_id', user.id).eq('is_completed', true)
+          : Promise.resolve({ data: null }),
+      ]);
 
     if (progressError) {
       console.warn('İlerleme kaydı hatası:', progressError.message);
@@ -447,10 +558,6 @@ export default function LessonScreen({ route, navigation }: Props) {
           lesson.icon_name === 'document-text-outline'
         );
       };
-      const { data: unitLessonsData } = await supabase
-        .from('lessons')
-        .select('id, sort_order, title, icon_name')
-        .eq('unit_id', unitId);
 
       const sortedUnitLessons = [...(unitLessonsData ?? [])].sort(
         (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
@@ -472,14 +579,9 @@ export default function LessonScreen({ route, navigation }: Props) {
         isLastFreeLessonInFirstUnit(unitId, currentCoreLessonIndex, firstUnitId);
 
       if (unitLessonIds.length > 0) {
-        const { data: completedUnitLessonsData } = await supabase
-          .from('user_progress')
-          .select('lesson_id')
-          .eq('user_id', user.id)
-          .eq('is_completed', true)
-          .in('lesson_id', unitLessonIds);
-
-        isUnitCompleted = (completedUnitLessonsData?.length ?? 0) >= unitLessonIds.length;
+        const completedLessonIds = new Set((completedLessonsData ?? []).map((row) => row.lesson_id));
+        completedLessonIds.add(lessonId);
+        isUnitCompleted = unitLessonIds.every((id) => completedLessonIds.has(id));
       }
     }
 
@@ -545,7 +647,7 @@ export default function LessonScreen({ route, navigation }: Props) {
   };
 
   const handleNext = async () => {
-    if (!currentStep) return;
+    if (!currentStep || isCompleting) return;
 
     if (currentStep.type === 'final_quiz') {
       const metadata = currentStep.metadata || {};
@@ -961,21 +1063,49 @@ export default function LessonScreen({ route, navigation }: Props) {
       return `${minutes}:${seconds.toString().padStart(2, '0')}`;
     };
 
+    const hasTranscript =
+      audioCaptionData &&
+      (audioCaptionData.mode === 'timed'
+        ? audioCaptionData.lines.length > 0
+        : audioCaptionData.hasTranscript);
+    const captionStarted =
+      audioState.isPlaying || audioState.position > 0 || audioState.isLoading;
+
+    let captionWindowWords: { word: string; globalIndex: number }[] = [];
+    let activeWordInWindow = -1;
+    if (hasTranscript && audioCaptionData?.mode === 'words' && audioCaptionData.visibleWordCount > 0) {
+      const startIndex = Math.max(0, audioCaptionData.visibleWordCount - AUDIO_CAPTION_WINDOW_WORDS);
+      captionWindowWords = audioCaptionData.words
+        .slice(startIndex, audioCaptionData.visibleWordCount)
+        .map((word, offset) => ({
+          word,
+          globalIndex: startIndex + offset,
+        }));
+      activeWordInWindow = audioCaptionData.activeWordIndex;
+    }
+
     return (
       <View style={styles.audioCard}>
         <Text style={styles.stepTag}>Dinleme</Text>
-        <View style={styles.audioIconContainer}>
+        <View style={[styles.audioIconContainer, hasTranscript && styles.audioIconContainerCompact]}>
           <Animated.View style={{ transform: [{ scale: pulseAnimation }] }}>
-            <Ionicons name="headset" size={80} color="#00C4CC" />
+            <Ionicons name="headset" size={hasTranscript ? 56 : 80} color="#00C4CC" />
           </Animated.View>
         </View>
-        {!!markdown && (
-          <View style={styles.audioDescriptionContainer}>
-            <Markdown style={markdownStyles}>{markdown}</Markdown>
+
+        {hasTranscript ? (
+          <View style={styles.audioIntroBlock}>
+            <Text style={styles.audioHeadline}>{AUDIO_STEP_HEADLINE}</Text>
+            <Text style={styles.audioSubline}>{AUDIO_STEP_SUBLINE}</Text>
           </View>
+        ) : (
+          !!markdown && (
+            <View style={styles.audioDescriptionContainer}>
+              <Markdown style={markdownStyles}>{markdown}</Markdown>
+            </View>
+          )
         )}
-        
-        {/* Progress Bar */}
+
         {audioState.duration > 0 && (
           <View style={styles.progressContainer}>
             <View style={styles.progressBar}>
@@ -989,7 +1119,7 @@ export default function LessonScreen({ route, navigation }: Props) {
         )}
 
         <TouchableOpacity
-          style={styles.playButton}
+          style={[styles.playButton, hasTranscript && styles.playButtonCompact]}
           onPress={handleAudioPlayPause}
           disabled={audioState.isLoading}
           activeOpacity={0.9}
@@ -1002,6 +1132,44 @@ export default function LessonScreen({ route, navigation }: Props) {
             </Text>
           )}
         </TouchableOpacity>
+
+        {hasTranscript && captionStarted && audioCaptionData?.mode === 'words' && captionWindowWords.length > 0 && (
+          <View style={styles.captionPanel}>
+            <View style={styles.captionClip}>
+              <View style={styles.captionWordWrap}>
+                {captionWindowWords.map(({ word, globalIndex }) => (
+                  <Text
+                    key={`word-${globalIndex}`}
+                    style={[
+                      styles.captionWord,
+                      globalIndex === activeWordInWindow && styles.captionWordActive,
+                    ]}
+                  >
+                    {word}{' '}
+                  </Text>
+                ))}
+              </View>
+            </View>
+          </View>
+        )}
+
+        {hasTranscript && captionStarted && audioCaptionData?.mode === 'timed' && (
+          <View style={styles.captionPanel}>
+            <View style={styles.captionClip}>
+              {audioCaptionData.lines.slice(0, audioCaptionData.activeIndex + 1).map((line, index) => (
+                <Text
+                  key={`caption-${index}`}
+                  style={[
+                    styles.captionLine,
+                    index === audioCaptionData.activeIndex && styles.captionLineActive,
+                  ]}
+                >
+                  {line}
+                </Text>
+              ))}
+            </View>
+          </View>
+        )}
       </View>
     );
   };
@@ -1054,52 +1222,66 @@ export default function LessonScreen({ route, navigation }: Props) {
       });
       const wrongCount = Math.max(questions.length - finalQuizState.score, 0);
 
+      const passed = finalQuizState.score >= passThreshold;
+
       return (
-        <View style={styles.card}>
-          <Text style={styles.stepTag}>Bölüm Sonu Testi</Text>
-          <Text style={styles.stepTitle}>
-            Skorun: {finalQuizState.score}/{questions.length}
-          </Text>
-          <Text style={[styles.feedbackText, finalQuizState.score >= passThreshold ? styles.feedbackSuccess : styles.feedbackError]}>
-            {finalQuizState.score >= passThreshold
-              ? `Tebrikler Ortak, testi geçtin.`
-              : `Bu tur ${passThreshold}/${questions.length} barajını geçemedin. Tekrar deneyelim.`}
-          </Text>
-          <View style={styles.resultSummaryRow}>
-            <View style={styles.resultPill}>
-              <Text style={styles.resultPillLabel}>Doğru</Text>
-              <Text style={styles.resultPillValue}>{finalQuizState.score}</Text>
+        <View style={styles.resultContainer}>
+          <View style={styles.resultHero}>
+            <Text style={styles.resultTag}>Bölüm Sonu Testi</Text>
+            <View style={[styles.scoreRing, { borderColor: passed ? '#4ADE80' : '#F87171' }]}>
+              <Text style={styles.scoreRingValue}>{finalQuizState.score}</Text>
+              <Text style={styles.scoreRingTotal}>/ {questions.length}</Text>
             </View>
-            <View style={styles.resultPill}>
-              <Text style={styles.resultPillLabel}>Baraj</Text>
-              <Text style={styles.resultPillValue}>{passThreshold}</Text>
+            <Text style={styles.resultHeadline}>
+              {passed ? 'Tebrikler ortak, testi geçtin!' : 'Bu sefer olmadı ortak.'}
+            </Text>
+            <Text style={styles.resultSubtext}>
+              {passed
+                ? wrongCount === 0
+                  ? 'Tüm soruları doğru cevapladın, harikasın.'
+                  : 'Yanlış yaptığın sorulara aşağıdan göz at, eksik kalmasın.'
+                : `Geçmek için en az ${passThreshold} doğru gerekiyor. Dersi tazeleyip tekrar deneyelim.`}
+            </Text>
+          </View>
+
+          <View style={styles.resultStatsRow}>
+            <View style={styles.resultStatCard}>
+              <Ionicons name="checkmark-circle" size={20} color="#4ADE80" />
+              <Text style={styles.resultStatValue}>{finalQuizState.score}</Text>
+              <Text style={styles.resultStatLabel}>Doğru</Text>
             </View>
-            <View style={styles.resultPill}>
-              <Text style={styles.resultPillLabel}>Yanlış</Text>
-              <Text style={styles.resultPillValue}>{wrongCount}</Text>
+            <View style={styles.resultStatCard}>
+              <Ionicons name="close-circle" size={20} color="#F87171" />
+              <Text style={styles.resultStatValue}>{wrongCount}</Text>
+              <Text style={styles.resultStatLabel}>Yanlış</Text>
+            </View>
+            <View style={styles.resultStatCard}>
+              <Ionicons name="flag" size={20} color={palette.accent} />
+              <Text style={styles.resultStatValue}>{passThreshold}</Text>
+              <Text style={styles.resultStatLabel}>Baraj</Text>
             </View>
           </View>
 
-          {finalQuizState.score < passThreshold && (
+          {!passed && (
             <TouchableOpacity style={styles.secondaryButton} onPress={handleReviewLesson} activeOpacity={0.85}>
               <Text style={styles.secondaryButtonText}>Dersleri Tekrarla</Text>
             </TouchableOpacity>
           )}
 
           {wrongQuestions.length > 0 && (
-            <View style={styles.explanationContainer}>
-              <Text style={styles.explanationLabel}>Yanlış Cevapların</Text>
+            <View style={styles.wrongSection}>
+              <Text style={styles.wrongSectionTitle}>Yanlış Cevapların</Text>
               {wrongQuestions.map((question, index) => {
                 const questionIndex = questions.findIndex((q) => q === question);
                 const questionKey = getFinalQuestionKey(question, questionIndex >= 0 ? questionIndex : index);
                 const selected = finalQuizState.selectedAnswers[questionKey];
                 const selectedText = question.options.find((opt) => opt.id === selected)?.text ?? 'Boş';
                 const correctText = question.options.find((opt) => opt.id === question.correct_option_id)?.text ?? '-';
-                const isExpanded = expandedWrongAnswers[questionKey] === true;
+                const isExpanded = expandedWrongAnswers[questionKey] !== false;
                 return (
-                  <View key={`${questionKey}-wrong-${index}`} style={styles.wrongAnswerRow}>
+                  <View key={`${questionKey}-wrong-${index}`} style={styles.wrongCard}>
                     <TouchableOpacity
-                      style={styles.wrongAnswerHeader}
+                      style={styles.wrongCardHeader}
                       activeOpacity={0.8}
                       onPress={() =>
                         setExpandedWrongAnswers((prev) => ({
@@ -1108,7 +1290,10 @@ export default function LessonScreen({ route, navigation }: Props) {
                         }))
                       }
                     >
-                      <Text style={styles.explanationText}>{index + 1}. {question.question}</Text>
+                      <View style={styles.wrongCardBadge}>
+                        <Text style={styles.wrongCardBadgeText}>{index + 1}</Text>
+                      </View>
+                      <Text style={styles.wrongCardQuestion}>{question.question}</Text>
                       <Ionicons
                         name={isExpanded ? 'chevron-up' : 'chevron-down'}
                         size={18}
@@ -1116,9 +1301,21 @@ export default function LessonScreen({ route, navigation }: Props) {
                       />
                     </TouchableOpacity>
                     {isExpanded ? (
-                      <View style={styles.wrongAnswerDetails}>
-                        <Text style={styles.wrongAnswerText}>Senin cevabın: {selectedText}</Text>
-                        <Text style={styles.correctAnswerText}>Doğru cevap: {correctText}</Text>
+                      <View style={styles.wrongCardBody}>
+                        <View style={[styles.answerBlock, styles.answerBlockWrong]}>
+                          <Ionicons name="close-circle" size={16} color="#F87171" style={styles.answerBlockIcon} />
+                          <View style={styles.answerBlockTextWrap}>
+                            <Text style={styles.answerBlockLabel}>Senin cevabın</Text>
+                            <Text style={styles.answerBlockTextWrong}>{selectedText}</Text>
+                          </View>
+                        </View>
+                        <View style={[styles.answerBlock, styles.answerBlockCorrect]}>
+                          <Ionicons name="checkmark-circle" size={16} color="#4ADE80" style={styles.answerBlockIcon} />
+                          <View style={styles.answerBlockTextWrap}>
+                            <Text style={styles.answerBlockLabel}>Doğru cevap</Text>
+                            <Text style={styles.answerBlockTextCorrect}>{correctText}</Text>
+                          </View>
+                        </View>
                       </View>
                     ) : null}
                   </View>
@@ -1338,21 +1535,28 @@ export default function LessonScreen({ route, navigation }: Props) {
           {renderStepContent()}
         </ScrollView>
         <TouchableOpacity
-          style={[styles.primaryButton, styles.footerButton, !canContinue && styles.primaryButtonDisabled]}
-          disabled={!canContinue}
+          style={[styles.primaryButton, styles.footerButton, (!canContinue || isCompleting) && styles.primaryButtonDisabled]}
+          disabled={!canContinue || isCompleting}
           onPress={handleNext}
         >
-          <Text style={styles.primaryButtonText}>
-            {currentStep?.type === 'final_quiz'
-              ? (finalQuizState.isSubmitted
-                  ? (finalQuizState.score >= currentFinalQuizPassThreshold ? 'Bölümü Bitir' : 'Testi Tekrar Çöz')
-                  : (!finalQuizState.hasStarted
-                      ? 'Teste Başla'
-                      : (finalQuizState.currentQuestionIndex >= (((currentStep.metadata || {}).questions as FinalQuizQuestion[] | undefined)?.length ?? 1) - 1
-                          ? 'Testi Bitir'
-                          : 'Sıradaki Soru')))
-              : (currentIndex === steps.length - 1 ? 'Bitir' : 'Devam Et')}
-          </Text>
+          {isCompleting ? (
+            <View style={styles.completingRow}>
+              <ActivityIndicator size="small" color="#000000" />
+              <Text style={styles.primaryButtonText}>Bitiriliyor...</Text>
+            </View>
+          ) : (
+            <Text style={styles.primaryButtonText}>
+              {currentStep?.type === 'final_quiz'
+                ? (finalQuizState.isSubmitted
+                    ? (finalQuizState.score >= currentFinalQuizPassThreshold ? 'Bölümü Bitir' : 'Testi Tekrar Çöz')
+                    : (!finalQuizState.hasStarted
+                        ? 'Teste Başla'
+                        : (finalQuizState.currentQuestionIndex >= (((currentStep.metadata || {}).questions as FinalQuizQuestion[] | undefined)?.length ?? 1) - 1
+                            ? 'Testi Bitir'
+                            : 'Sıradaki Soru')))
+                : (currentIndex === steps.length - 1 ? 'Bitir' : 'Devam Et')}
+            </Text>
+          )}
         </TouchableOpacity>
       </>
     );
@@ -1603,59 +1807,169 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '700',
   },
-  wrongAnswerRow: {
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#2A2A2A',
+  resultContainer: {
+    marginBottom: 24,
   },
-  wrongAnswerHeader: {
+  resultHero: {
+    alignItems: 'center',
+    paddingVertical: 28,
+    paddingHorizontal: 20,
+    backgroundColor: palette.card,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: palette.border,
+    marginBottom: 12,
+  },
+  resultTag: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: palette.muted,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    marginBottom: 20,
+  },
+  scoreRing: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    borderWidth: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 18,
+  },
+  scoreRingValue: {
+    fontSize: 40,
+    fontWeight: '800',
+    color: palette.text,
+    lineHeight: 44,
+  },
+  scoreRingTotal: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: palette.muted,
+  },
+  resultHeadline: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: palette.text,
+    textAlign: 'center',
+    marginBottom: 6,
+  },
+  resultSubtext: {
+    fontSize: 14,
+    color: palette.muted,
+    textAlign: 'center',
+    lineHeight: 21,
+  },
+  resultStatsRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
     gap: 10,
   },
-  wrongAnswerDetails: {
-    marginTop: 8,
-    paddingLeft: 2,
+  resultStatCard: {
+    flex: 1,
+    alignItems: 'center',
+    backgroundColor: palette.card,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: palette.border,
+    paddingVertical: 14,
+    gap: 4,
   },
-  wrongAnswerText: {
-    marginTop: 6,
-    fontSize: 14,
-    color: '#F59E0B',
+  resultStatValue: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: palette.text,
   },
-  correctAnswerText: {
-    marginTop: 4,
-    fontSize: 14,
-    color: '#86EFAC',
+  resultStatLabel: {
+    fontSize: 12,
     fontWeight: '600',
+    color: palette.muted,
   },
-  resultSummaryRow: {
-    marginTop: 14,
+  wrongSection: {
+    marginTop: 20,
+  },
+  wrongSectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: palette.text,
+    marginBottom: 12,
+  },
+  wrongCard: {
+    backgroundColor: palette.card,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: palette.border,
+    marginBottom: 10,
+    overflow: 'hidden',
+  },
+  wrongCardHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 10,
+    padding: 14,
+  },
+  wrongCardBadge: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(248, 113, 113, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  wrongCardBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#F87171',
+  },
+  wrongCardQuestion: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '600',
+    color: palette.text,
+    lineHeight: 21,
+  },
+  wrongCardBody: {
+    paddingHorizontal: 14,
+    paddingBottom: 14,
     gap: 8,
   },
-  resultPill: {
-    flex: 1,
-    backgroundColor: '#13181D',
-    borderColor: '#2A2A2A',
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 8,
+  answerBlock: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    borderRadius: 12,
+    padding: 12,
+    gap: 8,
   },
-  resultPillLabel: {
+  answerBlockWrong: {
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+  },
+  answerBlockCorrect: {
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+  },
+  answerBlockIcon: {
+    marginTop: 1,
+  },
+  answerBlockTextWrap: {
+    flex: 1,
+  },
+  answerBlockLabel: {
+    fontSize: 11,
+    fontWeight: '700',
     color: palette.muted,
-    fontSize: 12,
-    textAlign: 'center',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
     marginBottom: 2,
   },
-  resultPillValue: {
-    color: palette.text,
-    fontSize: 18,
-    fontWeight: '700',
-    textAlign: 'center',
+  answerBlockTextWrong: {
+    fontSize: 14,
+    color: '#FCA5A5',
+    lineHeight: 20,
+  },
+  answerBlockTextCorrect: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#86EFAC',
+    lineHeight: 20,
   },
   feedbackText: {
     marginTop: 16,
@@ -1745,6 +2059,11 @@ const styles = StyleSheet.create({
   primaryButtonDisabled: {
     opacity: 0.4,
   },
+  completingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   primaryButtonText: {
     color: '#000000',
     fontSize: 16,
@@ -1792,6 +2111,28 @@ const styles = StyleSheet.create({
   },
   audioIconContainer: {
     marginVertical: 24,
+    alignItems: 'center',
+  },
+  audioIconContainerCompact: {
+    marginVertical: 12,
+  },
+  audioIntroBlock: {
+    width: '100%',
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+  audioHeadline: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: palette.text,
+    textAlign: 'center',
+    marginBottom: 6,
+  },
+  audioSubline: {
+    fontSize: 13,
+    lineHeight: 19,
+    color: palette.muted,
+    textAlign: 'center',
   },
   audioIcon: {
     fontSize: 64,
@@ -1805,7 +2146,46 @@ const styles = StyleSheet.create({
   },
   audioDescriptionContainer: {
     width: '100%',
-    marginBottom: 32,
+    marginBottom: 20,
+  },
+  captionPanel: {
+    width: '100%',
+    marginTop: 16,
+    padding: 14,
+    borderRadius: 14,
+    backgroundColor: '#141414',
+    borderWidth: 1,
+    borderColor: '#2A2A2A',
+    overflow: 'hidden',
+  },
+  captionClip: {
+    height: 108,
+    overflow: 'hidden',
+    justifyContent: 'flex-end',
+  },
+  captionWordWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    width: '100%',
+  },
+  captionWord: {
+    fontSize: 16,
+    lineHeight: 26,
+    color: palette.text,
+  },
+  captionWordActive: {
+    color: palette.accent,
+    fontWeight: '700',
+  },
+  captionLine: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: palette.text,
+    marginBottom: 10,
+  },
+  captionLineActive: {
+    color: palette.accent,
+    fontWeight: '700',
   },
   playButton: {
     backgroundColor: palette.accent,
@@ -1820,6 +2200,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
+  },
+  playButtonCompact: {
+    paddingVertical: 14,
+    minWidth: 180,
   },
   playButtonText: {
     color: '#000000',

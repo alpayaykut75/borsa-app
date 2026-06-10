@@ -36,6 +36,8 @@ repodaki migration dosyaları çoğu ders için ESKİDİR / canlı DB ile senkro
 - JSONB içerik için dollar-quote (`$$ ... $$`) kullan (Türkçe karakter/tırnak kaçışı derdi olmaz).
 - Geçici test bayrakları `src/constants/devFlags.ts`'de:
   - `UNLOCK_ALL_FOR_TEST` — prod öncesi `false` yapılmalı.
-  - `HIDE_AUDIO_STEPS_TEMPORARILY` — ses adımları (`type: 'audio'`) uygulamada gizli; ses dosyaları hazır olunca `false`.
+  - `HIDE_AUDIO_STEPS_TEMPORARILY` — artık `false`; ses adımı görünürlüğü adım bazında DB'deki
+   `metadata.hidden_in_app` ile yönetiliyor (sadece sesi hazır derslerde `false` yapılır,
+   diğer derslerin ses adımları yer tutucu URL ile gizli durur).
 - Storage bucket adı büyük "S" ile **Shorts** (harf duyarlı).
 - Shorts beğen/kaydet durumu cihazda AsyncStorage ile kalıcı (`src/services/shortsStorage.ts`).
