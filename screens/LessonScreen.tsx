@@ -45,6 +45,11 @@ const palette = {
   danger: '#DC2626',
 };
 
+const AUDIO_CAPTION_LINE_HEIGHT = 26;
+const AUDIO_CAPTION_VISIBLE_LINES = 7;
+/** Sabit 7 satır; flex ile büyütülmez — Devam Et ile çakışmasın. */
+const AUDIO_CAPTION_CLIP_HEIGHT = AUDIO_CAPTION_LINE_HEIGHT * AUDIO_CAPTION_VISIBLE_LINES;
+
 const { width: windowWidth } = Dimensions.get('window');
 const flipCardWidth = Math.min(windowWidth - 40, 420);
 
@@ -1085,7 +1090,7 @@ export default function LessonScreen({ route, navigation }: Props) {
     }
 
     return (
-      <View style={styles.audioCard}>
+      <View style={[styles.audioCard, hasTranscript && styles.audioCardWithCaption]}>
         <Text style={styles.stepTag}>Dinleme</Text>
         <View style={[styles.audioIconContainer, hasTranscript && styles.audioIconContainerCompact]}>
           <Animated.View style={{ transform: [{ scale: pulseAnimation }] }}>
@@ -1135,7 +1140,7 @@ export default function LessonScreen({ route, navigation }: Props) {
 
         {hasTranscript && captionStarted && audioCaptionData?.mode === 'words' && captionWindowWords.length > 0 && (
           <View style={styles.captionPanel}>
-            <View style={styles.captionClip}>
+            <View style={[styles.captionClip, { height: AUDIO_CAPTION_CLIP_HEIGHT }]}>
               <View style={styles.captionWordWrap}>
                 {captionWindowWords.map(({ word, globalIndex }) => (
                   <Text
@@ -1155,7 +1160,7 @@ export default function LessonScreen({ route, navigation }: Props) {
 
         {hasTranscript && captionStarted && audioCaptionData?.mode === 'timed' && (
           <View style={styles.captionPanel}>
-            <View style={styles.captionClip}>
+            <View style={[styles.captionClip, { height: AUDIO_CAPTION_CLIP_HEIGHT }]}>
               {audioCaptionData.lines.slice(0, audioCaptionData.activeIndex + 1).map((line, index) => (
                 <Text
                   key={`caption-${index}`}
@@ -1529,7 +1534,10 @@ export default function LessonScreen({ route, navigation }: Props) {
         </View>
         <ScrollView
           style={styles.scrollContainer}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[
+            styles.scrollContent,
+            currentStep?.type === 'audio' && styles.scrollContentAudio,
+          ]}
           showsVerticalScrollIndicator={false}
         >
           {renderStepContent()}
@@ -1687,6 +1695,9 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: 28,
+  },
+  scrollContentAudio: {
+    paddingBottom: 8,
   },
   card: {
     backgroundColor: palette.card,
@@ -2109,6 +2120,9 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     alignItems: 'center',
   },
+  audioCardWithCaption: {
+    marginBottom: 16,
+  },
   audioIconContainer: {
     marginVertical: 24,
     alignItems: 'center',
@@ -2159,7 +2173,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   captionClip: {
-    height: 108,
     overflow: 'hidden',
     justifyContent: 'flex-end',
   },
@@ -2170,7 +2183,7 @@ const styles = StyleSheet.create({
   },
   captionWord: {
     fontSize: 16,
-    lineHeight: 26,
+    lineHeight: AUDIO_CAPTION_LINE_HEIGHT,
     color: palette.text,
   },
   captionWordActive: {

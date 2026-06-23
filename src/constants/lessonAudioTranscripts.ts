@@ -7,7 +7,7 @@ export const AUDIO_STEP_HEADLINE = 'Hadi bu dersin özetini dinleyelim.';
 export const AUDIO_STEP_SUBLINE = 'Sessiz ortamdaysan altyazı otomatik açılır.';
 
 /** Altyazı kutusunda aynı anda görünen kelime sayısı (kaydırma derdi olmasın). */
-export const AUDIO_CAPTION_WINDOW_WORDS = 28;
+export const AUDIO_CAPTION_WINDOW_WORDS = 40;
 
 export const LESSON_AUDIO_TRANSCRIPTS: Record<number, string> = {
   // Ders 1 — lesson_id 27 ("Borsa Nedir?") — Moono_Ders1.mp3 transkripti

@@ -13,7 +13,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Audio, ResizeMode, Video } from 'expo-av';
 // @ts-expect-error - @expo/vector-icons type declarations may be missing
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useIsFocused, useNavigation } from '@react-navigation/native';
 import type { NavigationProp } from '@react-navigation/native';
 
 import type { RootStackParamList } from '../App';
@@ -117,6 +117,7 @@ function ShortCard({
   item,
   height,
   isActive,
+  screenFocused,
   isSaved,
   isLiked,
   onToggleSave,
@@ -126,6 +127,7 @@ function ShortCard({
   item: Short;
   height: number;
   isActive: boolean;
+  screenFocused: boolean;
   isSaved: boolean;
   isLiked: boolean;
   onToggleSave: () => void;
@@ -135,6 +137,21 @@ function ShortCard({
   const videoRef = useRef<Video>(null);
   const [muted, setMuted] = useState(false);
   const meta = CATEGORY_META[item.category];
+  const shouldPlay = isActive && screenFocused;
+
+  useEffect(() => {
+    if (!shouldPlay) {
+      videoRef.current?.pauseAsync().catch(() => {});
+    }
+  }, [shouldPlay]);
+
+  // Tab veya ders ekranına çıkınca sıfırla — geri dönünce Instagram gibi baştan başlar.
+  useEffect(() => {
+    if (!screenFocused) {
+      videoRef.current?.pauseAsync().catch(() => {});
+      videoRef.current?.setPositionAsync(0).catch(() => {});
+    }
+  }, [screenFocused]);
 
   return (
     <View style={[styles.card, { height, backgroundColor: item.accent }]}>
@@ -150,7 +167,7 @@ function ShortCard({
             style={StyleSheet.absoluteFill}
             resizeMode={ResizeMode.COVER}
             isLooping
-            shouldPlay={isActive}
+            shouldPlay={shouldPlay}
             isMuted={muted}
           />
           <View style={styles.muteBadge}>
@@ -226,6 +243,7 @@ function ShortCard({
 
 export default function ShortsScreen() {
   const navigation = useNavigation<ShortsNav>();
+  const screenFocused = useIsFocused();
   const [shorts, setShorts] = useState<Short[]>(FALLBACK_SHORTS);
   const [containerHeight, setContainerHeight] = useState<number | null>(null);
   const [activeId, setActiveId] = useState<string>(FALLBACK_SHORTS[0]?.id ?? '');
@@ -341,6 +359,7 @@ export default function ShortsScreen() {
               item={item}
               height={pageHeight}
               isActive={item.id === activeId}
+              screenFocused={screenFocused}
               isSaved={savedIds.has(item.id)}
               isLiked={likedIds.has(item.id)}
               onToggleSave={() => toggleSave(item.id)}
