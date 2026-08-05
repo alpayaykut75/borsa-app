@@ -56,7 +56,13 @@ export type RootStackParamList = {
 
 export type HomeStackParamList = {
   Home: undefined;
-  UnitDetail: { unitId: number; unitTitle: string; levelExamPassed?: boolean };
+  UnitDetail: {
+    unitId: number;
+    unitTitle: string;
+    levelExamPassed?: boolean;
+    /** Kilitli seviye önizlemesi — dersler görünür, açılamaz */
+    previewLocked?: boolean;
+  };
   GrowthCenter: undefined;
   FlashcardLibrary: undefined;
   MarketNews: undefined;

@@ -60,9 +60,7 @@ export default function UnitPathItem({
   const progress = totalLessons > 0 ? visibleCompletedLessons / totalLessons : 0;
 
   const handlePress = () => {
-    if (!isProgressLocked) {
-      onPress(unit);
-    }
+    onPress(unit);
   };
 
   return (
@@ -72,9 +70,8 @@ export default function UnitPathItem({
         status === 'ACTIVE' && styles.unitCardActive,
         isLocked && styles.unitCardLocked,
       ]}
-      activeOpacity={isProgressLocked ? 1 : 0.85}
+      activeOpacity={0.85}
       onPress={handlePress}
-      disabled={isProgressLocked}
     >
       <View style={styles.unitContent}>
         {/* Icon Container */}
@@ -137,12 +134,14 @@ export default function UnitPathItem({
           )}
         </View>
 
-        {/* Arrow */}
-        {!isProgressLocked && (
-          <View style={styles.arrowContainer}>
-            <Ionicons name="chevron-forward" size={20} color={isPremiumLocked ? palette.accent : palette.muted} />
-          </View>
-        )}
+        {/* Arrow — kilitli seviyede de önizleme için göster */}
+        <View style={styles.arrowContainer}>
+          <Ionicons
+            name="chevron-forward"
+            size={20}
+            color={isProgressLocked ? palette.locked : isPremiumLocked ? palette.accent : palette.muted}
+          />
+        </View>
       </View>
     </TouchableOpacity>
   );

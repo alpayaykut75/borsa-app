@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Image,
   SafeAreaView,
@@ -82,7 +83,7 @@ const getLevelHeaderImage = (unitTitle?: string, unitId?: number) => {
 };
 
 export default function UnitDetailScreen({ route, navigation }: Props) {
-  const { unitId, unitTitle, levelExamPassed = false } = route.params;
+  const { unitId, unitTitle, levelExamPassed = false, previewLocked = false } = route.params;
   const [runtimeExamPassed, setRuntimeExamPassed] = useState(isLevelExamPassed(unitId));
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [loading, setLoading] = useState(true);
@@ -212,6 +213,14 @@ export default function UnitDetailScreen({ route, navigation }: Props) {
   const handleLessonPress = (lesson: Lesson) => {
     const index = lessons.findIndex((l) => l.id === lesson.id);
 
+    if (previewLocked) {
+      Alert.alert(
+        'Seviye kilitli',
+        'Bu seviye seni bekliyor Ortak. Önceki seviyeyi bitirince buradaki dersler açılır.',
+      );
+      return;
+    }
+
     if (isPremiumGateLesson(index, lesson)) {
       openPaywall({
         title: 'Premium ile devam et',
@@ -222,7 +231,10 @@ export default function UnitDetailScreen({ route, navigation }: Props) {
     }
 
     const status = getLessonStatus(index, lesson.id, lesson);
-    if (status === 'LOCKED') return;
+    if (status === 'LOCKED') {
+      Alert.alert('Ders kilitli', 'Önce bir önceki dersi tamamla, Ortak.');
+      return;
+    }
 
     playSound('correct', { volume: 0.22, maxDurationMs: 200 });
     setTimeout(() => {
@@ -237,7 +249,17 @@ export default function UnitDetailScreen({ route, navigation }: Props) {
   };
 
   const handleLevelExamPress = () => {
-    if (!UNLOCK_ALL_FOR_TEST && !areAllLessonsCompleted) return;
+    if (previewLocked) {
+      Alert.alert(
+        'Seviye kilitli',
+        'Bu seviye seni bekliyor Ortak. Önceki seviyeyi bitirince sınav da açılır.',
+      );
+      return;
+    }
+    if (!UNLOCK_ALL_FOR_TEST && !areAllLessonsCompleted) {
+      Alert.alert('Sınav kilitli', 'Önce bu seviyedeki tüm dersleri tamamla, Ortak.');
+      return;
+    }
     playSound('correct', { volume: 0.22, maxDurationMs: 200 });
     setTimeout(() => {
       navigation.navigate('LevelExam', {
@@ -252,6 +274,9 @@ export default function UnitDetailScreen({ route, navigation }: Props) {
     lessonId: number,
     lesson: Lesson,
   ): 'LOCKED' | 'ACTIVE' | 'COMPLETED' | 'PREMIUM' => {
+    if (previewLocked) {
+      return 'LOCKED';
+    }
     if (index < 0) {
       return 'LOCKED';
     }
@@ -295,11 +320,13 @@ export default function UnitDetailScreen({ route, navigation }: Props) {
 
   const renderItem = ({ item, index }: { item: LessonListItem; index: number }) => {
     if ('type' in item && item.type === 'LEVEL_EXAM') {
-      const examStatus: 'LOCKED' | 'ACTIVE' | 'COMPLETED' = (levelExamPassed || runtimeExamPassed)
-        ? 'COMPLETED'
-        : (UNLOCK_ALL_FOR_TEST || areAllLessonsCompleted)
-          ? 'ACTIVE'
-          : 'LOCKED';
+      const examStatus: 'LOCKED' | 'ACTIVE' | 'COMPLETED' = previewLocked
+        ? 'LOCKED'
+        : (levelExamPassed || runtimeExamPassed)
+          ? 'COMPLETED'
+          : (UNLOCK_ALL_FOR_TEST || areAllLessonsCompleted)
+            ? 'ACTIVE'
+            : 'LOCKED';
       return (
         <LessonPathItem
           lesson={{
@@ -373,6 +400,17 @@ export default function UnitDetailScreen({ route, navigation }: Props) {
         data={listItems}
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.listContent}
+        ListHeaderComponent={
+          previewLocked ? (
+            <View style={styles.previewBanner}>
+              <Ionicons name="lock-closed" size={18} color={palette.accent} />
+              <Text style={styles.previewBannerText}>
+                Bu seviye seni bekliyor Ortak. Dersleri şimdiden görebilirsin; önceki seviyeyi
+                bitirince kilidi açılır.
+              </Text>
+            </View>
+          ) : null
+        }
         renderItem={renderItem}
         showsVerticalScrollIndicator={false}
       />
@@ -405,7 +443,9 @@ export default function UnitDetailScreen({ route, navigation }: Props) {
               {unitTitle || 'Dersler'}
             </Text>
             <Text style={styles.headerSubtext}>
-              Adım {currentStep}/{Math.max(totalCount, 1)} • %{completionPercentage}
+              {previewLocked
+                ? `${Math.max(totalCount, 1)} ders • Önizleme`
+                : `Adım ${currentStep}/${Math.max(totalCount, 1)} • %${completionPercentage}`}
             </Text>
           </View>
         </View>
@@ -464,6 +504,24 @@ const styles = StyleSheet.create({
   headerSubtext: {
     fontSize: 14,
     color: palette.muted,
+    fontWeight: '500',
+  },
+  previewBanner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    backgroundColor: 'rgba(0, 196, 204, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 196, 204, 0.35)',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 8,
+  },
+  previewBannerText: {
+    flex: 1,
+    fontSize: 14,
+    lineHeight: 21,
+    color: palette.text,
     fontWeight: '500',
   },
   centerState: {

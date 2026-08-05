@@ -47,9 +47,7 @@ export default function LessonPathItem({
   const isLocked = isProgressLocked || isPremiumLocked;
 
   const handlePress = () => {
-    if (!isProgressLocked) {
-      onPress(lesson);
-    }
+    onPress(lesson);
   };
   const normalizedTitle = (lesson.title || '').toLowerCase();
   const isExamLike =
@@ -118,9 +116,8 @@ export default function LessonPathItem({
           isPremiumLocked && styles.lessonCardPremium,
           isProgressLocked && styles.lessonCardLocked,
         ]}
-        activeOpacity={isProgressLocked ? 1 : 0.85}
+        activeOpacity={0.85}
         onPress={handlePress}
-        disabled={isProgressLocked}
       >
         <View style={styles.lessonContent}>
           <View style={styles.textContainer}>

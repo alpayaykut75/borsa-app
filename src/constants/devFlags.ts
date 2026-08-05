@@ -1,6 +1,6 @@
 // Temporary QA switch.
 // IMPORTANT: set to false before production release.
-export const UNLOCK_ALL_FOR_TEST = true;
+export const UNLOCK_ALL_FOR_TEST = false;
 
 // Audio step visibility is controlled per-step via metadata.hidden_in_app in the DB.
 // This global kill-switch stays available if all audio needs to be hidden again.

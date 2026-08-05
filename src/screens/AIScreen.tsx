@@ -1,10 +1,22 @@
 // --- src/screens/AIScreen.tsx ---
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { View, TextInput, TouchableOpacity, ScrollView, Text, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import {
+  View,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  Text,
+  StyleSheet,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  LayoutChangeEvent,
+  InteractionManager,
+} from 'react-native';
 // @ts-expect-error - @expo/vector-icons type declarations may be missing
 import { Ionicons } from '@expo/vector-icons';
-import { getMoonoResponse } from '../services/MoonoAIService'; // Adım 1'de oluşturulan servis
-import { formatMoonoResponse } from '../utils/MoonoFormatter'; // Formatlama utilitesi
+import { getMoonoResponse } from '../services/MoonoAIService';
+import { formatMoonoResponse } from '../utils/MoonoFormatter';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import TabScreenHeader from '../../components/TabScreenHeader';
 import { useAuth } from '../contexts/AuthContext';
@@ -17,10 +29,10 @@ import {
 } from '../constants/moonoChatStorage';
 import { MOONO_CHARACTER_AVATAR } from '../constants/avatars';
 
-// MARKADAN GELEN DEĞERLER (Brand Code)
-const DEEP_SPACE_BLACK = '#000000'; // Ana arka plan
-const DARK_MATTER_GREY = '#1A1A1A'; // Kartlar/Giriş alanı
-const NEON_CYAN = '#00C4CC'; // Ana aksiyon rengi
+const DEEP_SPACE_BLACK = '#000000';
+const DARK_MATTER_GREY = '#1A1A1A';
+const USER_BUBBLE = '#2A2A2A';
+const NEON_CYAN = '#00C4CC';
 
 type Message = StoredMoonoMessage;
 
@@ -36,18 +48,91 @@ export default function AIScreen() {
     () => moonoChatStorageKey(session?.user?.id),
     [session?.user?.id],
   );
+  const scrollViewRef = useRef<ScrollView>(null);
+  /** mesaj id → { y, height } content içinde */
+  const layoutRef = useRef<Record<string, { y: number; height: number }>>({});
+  const pinUserIdRef = useRef<number | null>(null);
+  const thinkingHeightRef = useRef(0);
+  /** Uygulama açılınca / sohbet yüklenince en alta in */
+  const pendingScrollToEndRef = useRef(false);
 
   const [messages, setMessages] = useState<Message[]>([INITIAL_WELCOME_MESSAGE]);
   const [chatHydrated, setChatHydrated] = useState(false);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isInputFocused, setIsInputFocused] = useState(false);
+  const [scrollAreaHeight, setScrollAreaHeight] = useState(0);
+  const [pinUserId, setPinUserId] = useState<number | null>(null);
+  const [spacerTick, setSpacerTick] = useState(0);
+
+  const scrollToEnd = useCallback((animated = false) => {
+    requestAnimationFrame(() => {
+      scrollViewRef.current?.scrollToEnd({ animated });
+    });
+  }, []);
+
+  const scrollToPinnedUser = useCallback((animated = true) => {
+    const id = pinUserIdRef.current;
+    if (id == null) return;
+    const layout = layoutRef.current[String(id)];
+    if (!layout) return;
+    scrollViewRef.current?.scrollTo({ y: Math.max(0, layout.y - 2), animated });
+  }, []);
+
+  const schedulePin = useCallback(
+    (userId: number, animated = true) => {
+      pinUserIdRef.current = userId;
+      setPinUserId(userId);
+      const run = () => scrollToPinnedUser(animated);
+      run();
+      requestAnimationFrame(run);
+      setTimeout(run, 16);
+      setTimeout(run, 50);
+      setTimeout(run, 120);
+      setTimeout(run, 280);
+      InteractionManager.runAfterInteractions(run);
+    },
+    [scrollToPinnedUser],
+  );
+
+  /**
+   * Claude mantığı: son sorunun altında, ekranı dolduracak kadar boşluk.
+   * Böylece scrollTo(soru) önceki yazışmaları yukarı iter / ekrandan çıkarır.
+   * Cevap uzadıkça boşluk küçülür → uzun cevapta gereksiz gap olmaz.
+   */
+  const turnSpacerHeight = useMemo(() => {
+    void spacerTick;
+    if (pinUserId == null || scrollAreaHeight <= 0) return 12;
+
+    const userLayout = layoutRef.current[String(pinUserId)];
+    const userH = userLayout?.height ?? 56;
+
+    let afterH = 0;
+    if (isLoading) {
+      afterH += thinkingHeightRef.current || 48;
+    }
+
+    const pinIndex = messages.findIndex((m) => m.id === pinUserId);
+    if (pinIndex >= 0) {
+      for (let i = pinIndex + 1; i < messages.length; i += 1) {
+        afterH += layoutRef.current[String(messages[i].id)]?.height ?? 0;
+      }
+    }
+
+    // Viewport'ta sorunun altında kalan alan − altındaki içerik = spacer
+    const roomBelowUser = Math.max(0, scrollAreaHeight - userH - 8);
+    return Math.max(12, roomBelowUser - afterH);
+  }, [pinUserId, scrollAreaHeight, messages, isLoading, spacerTick]);
 
   useEffect(() => {
     let cancelled = false;
     setChatHydrated(false);
     setMessages([INITIAL_WELCOME_MESSAGE]);
     setInput('');
+    pinUserIdRef.current = null;
+    setPinUserId(null);
+    layoutRef.current = {};
+    pendingScrollToEndRef.current = false;
 
     (async () => {
       try {
@@ -58,7 +143,11 @@ export default function AIScreen() {
       } catch {
         if (!cancelled) setMessages([INITIAL_WELCOME_MESSAGE]);
       } finally {
-        if (!cancelled) setChatHydrated(true);
+        if (!cancelled) {
+          // Kayıtlı sohbet yüklendi → en son mesaja in (ChatGPT/Claude gibi)
+          pendingScrollToEndRef.current = true;
+          setChatHydrated(true);
+        }
       }
     })();
 
@@ -68,23 +157,53 @@ export default function AIScreen() {
   }, [storageKey]);
 
   useEffect(() => {
+    if (!chatHydrated || !pendingScrollToEndRef.current) return;
+    const run = () => {
+      if (!pendingScrollToEndRef.current || pinUserIdRef.current != null) return;
+      scrollToEnd(false);
+    };
+    run();
+    const t1 = setTimeout(run, 50);
+    const t2 = setTimeout(() => {
+      run();
+      pendingScrollToEndRef.current = false;
+    }, 300);
+    InteractionManager.runAfterInteractions(run);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, [chatHydrated, messages, scrollToEnd]);
+
+  useEffect(() => {
     if (!chatHydrated) return;
     saveMoonoChatMessages(storageKey, messages).catch(() => {});
   }, [messages, chatHydrated, storageKey]);
 
-  // Gönder butonu tıklandığında çalışır
+  const handleMessageLayout = useCallback(
+    (messageId: string | number, event: LayoutChangeEvent) => {
+      const { y, height } = event.nativeEvent.layout;
+      layoutRef.current[String(messageId)] = { y, height };
+      setSpacerTick((t) => t + 1);
+      if (pinUserIdRef.current != null && String(messageId) === String(pinUserIdRef.current)) {
+        scrollToPinnedUser(true);
+      }
+    },
+    [scrollToPinnedUser],
+  );
+
   const handleSendMessage = useCallback(async () => {
     if (!input.trim() || isLoading) return;
 
-    const userMessage: Message = { id: Date.now(), text: input, sender: 'user' };
-    
-    // 1. Kullanıcı mesajını ekle
-    setMessages(prev => [...prev, userMessage]);
+    const userMessage: Message = { id: Date.now(), text: input.trim(), sender: 'user' };
+
+    setMessages((prev) => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
+    // Gönderir göndermez: soru üste, önceki sohbet yukarı kaybolsun
+    schedulePin(userMessage.id, true);
 
     try {
-      // 2. Moono servisini çağır
       const history = messages
         .filter((m) => m.id !== userMessage.id)
         .slice(-10)
@@ -96,36 +215,26 @@ export default function AIScreen() {
       const userTurnIndex = history.filter((m) => m.role === 'user').length;
       const moonoText = await getMoonoResponse(userMessage.text, history, userTurnIndex);
 
-      // 3. Moono cevabını ekle
-      const moonoResponse: Message = { id: Date.now() + 1, text: moonoText, sender: 'moono' };
-      setMessages(prev => [...prev, moonoResponse]);
-
-    } catch (error) {
-      console.error("API Call Error:", error);
-      const errorMessage: Message = { id: Date.now() + 2, text: "Bağlantıda bir sorun oluştu Ortak. Kısa süre sonra tekrar deneyelim.", sender: 'moono' };
-      setMessages(prev => [...prev, errorMessage]);
-    } finally {
+      setMessages((prev) => [
+        ...prev,
+        { id: Date.now() + 1, text: moonoText, sender: 'moono' },
+      ]);
       setIsLoading(false);
+      schedulePin(userMessage.id, true);
+    } catch (error) {
+      console.error('API Call Error:', error);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now() + 2,
+          text: 'Bağlantıda bir sorun oluştu Ortak. Kısa süre sonra tekrar deneyelim.',
+          sender: 'moono',
+        },
+      ]);
+      setIsLoading(false);
+      schedulePin(userMessage.id, true);
     }
-  }, [input, isLoading, messages]);
-
-  // Sohbet balonunu render eder
-  const renderMessage = ({ id, text, sender }: Message) => (
-    <View key={String(id)} style={[
-      styles.messageBubble,
-      sender === 'user' ? styles.userBubble : styles.moonoBubble
-    ]}>
-      {sender === 'moono' ? (
-        // Moono'nun yanıtlarını formatlamak için utilite kullanılır (Vurgu için)
-        <Text style={styles.moonoText}>
-          {formatMoonoResponse(text)}
-        </Text>
-      ) : (
-        // Kullanıcı metni
-        <Text style={styles.userText}>{text}</Text>
-      )}
-    </View>
-  );
+  }, [input, isLoading, messages, schedulePin]);
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -140,11 +249,60 @@ export default function AIScreen() {
           avatarImage={MOONO_CHARACTER_AVATAR}
           moonoAvatarCrop
         />
-        <ScrollView contentContainerStyle={styles.messageList}>
-          {/* Mesajları normal sırada render et */}
-          {messages.map(renderMessage)}
+        <ScrollView
+          ref={scrollViewRef}
+          style={styles.messageScroll}
+          contentContainerStyle={styles.messageList}
+          keyboardShouldPersistTaps="handled"
+          onLayout={(e) => setScrollAreaHeight(e.nativeEvent.layout.height)}
+          onContentSizeChange={() => {
+            if (pinUserIdRef.current != null) {
+              scrollToPinnedUser(false);
+              return;
+            }
+            if (pendingScrollToEndRef.current) {
+              scrollToEnd(false);
+            }
+          }}
+        >
+          {messages.map(({ id, text, sender }) =>
+            sender === 'user' ? (
+              <View
+                key={String(id)}
+                onLayout={(e) => handleMessageLayout(id, e)}
+                style={styles.userRow}
+              >
+                <View style={styles.userBubble}>
+                  <Text style={styles.userText}>{text}</Text>
+                </View>
+              </View>
+            ) : (
+              <View
+                key={String(id)}
+                onLayout={(e) => handleMessageLayout(id, e)}
+                style={styles.moonoBlock}
+              >
+                <Text style={styles.moonoText}>{formatMoonoResponse(text)}</Text>
+              </View>
+            ),
+          )}
+
+          {isLoading && (
+            <View
+              style={styles.thinkingRow}
+              onLayout={(e) => {
+                thinkingHeightRef.current = e.nativeEvent.layout.height;
+                setSpacerTick((t) => t + 1);
+              }}
+            >
+              <ActivityIndicator color={NEON_CYAN} size="small" />
+              <Text style={styles.thinkingLabel}>Düşünüyor...</Text>
+            </View>
+          )}
+
+          <View style={{ height: turnSpacerHeight }} />
         </ScrollView>
-        
+
         <View style={styles.inputContainer}>
           <TextInput
             style={[styles.textInput, isInputFocused && styles.textInputFocused]}
@@ -182,40 +340,53 @@ const styles = StyleSheet.create({
   keyboardView: {
     flex: 1,
   },
-  messageList: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    flexGrow: 1,
-    justifyContent: 'flex-end', // İçeriği altta tutar
+  messageScroll: {
+    flex: 1,
   },
-  messageBubble: {
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 15,
-    marginVertical: 5,
-    maxWidth: '85%',
+  messageList: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 8,
+    flexGrow: 1,
+  },
+  userRow: {
+    width: '100%',
+    alignItems: 'flex-end',
+    marginVertical: 10,
   },
   userBubble: {
-    alignSelf: 'flex-end',
-    backgroundColor: DARK_MATTER_GREY, // Gri kart rengi
-    borderBottomRightRadius: 5,
-  },
-  moonoBubble: {
-    alignSelf: 'flex-start',
-    backgroundColor: DARK_MATTER_GREY,
-    borderWidth: 1,
-    borderColor: NEON_CYAN + '55',
-    borderBottomLeftRadius: 5,
+    maxWidth: '82%',
+    backgroundColor: USER_BUBBLE,
+    borderRadius: 22,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
   },
   userText: {
-    color: 'white',
-    fontSize: 18,
-    lineHeight: 28,
+    color: '#FFFFFF',
+    fontSize: 17,
+    lineHeight: 26,
+  },
+  moonoBlock: {
+    width: '100%',
+    marginVertical: 8,
+    paddingHorizontal: 2,
   },
   moonoText: {
-    color: 'white',
-    fontSize: 18,
+    color: '#FFFFFF',
+    fontSize: 17,
     lineHeight: 28,
+  },
+  thinkingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 4,
+  },
+  thinkingLabel: {
+    color: '#9CA3AF',
+    fontSize: 14,
+    fontWeight: '600',
   },
   inputContainer: {
     flexDirection: 'row',
@@ -249,4 +420,3 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 });
-

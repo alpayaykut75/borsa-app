@@ -154,9 +154,13 @@ export default function HomeScreen() {
 
   const handleStartLesson = (unit: Unit) => {
     playSound('correct', { volume: 0.22, maxDurationMs: 200 });
+    const sortedUnits = [...units].sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
+    const index = sortedUnits.findIndex((u) => u.id === unit.id);
+    const status = getUnitStatus(index);
     navigation.navigate('UnitDetail', {
       unitId: unit.id,
       unitTitle: unit.title,
+      previewLocked: status === 'LOCKED',
     });
   };
 
@@ -310,7 +314,7 @@ export default function HomeScreen() {
       <View style={styles.container}>
         <TabScreenHeader
           title={`Hos Geldin ${greetingFirstName(profileFirstName)}`}
-          subtitle="Adim Adim Borsa"
+          subtitle="Adım Adım Borsa"
           avatarImage={profilePhoto ? undefined : getProfileAvatarSource(profileAvatarId)}
           avatarPhotoUri={profilePhoto}
           moonoAvatarCrop

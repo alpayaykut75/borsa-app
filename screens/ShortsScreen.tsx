@@ -36,12 +36,8 @@ const CATEGORY_META: Record<ShortCategory, { label: string; icon: string; tint: 
   hikaye: { label: 'Hikaye', icon: 'book', tint: '#A78BFA' },
 };
 
-// Supabase erişilemez/boşsa kullanılacak yedek içerik.
+// Supabase erişilemez/boşsa kullanılacak yedek içerik (yalnızca videosu olanlar).
 const FALLBACK_SHORTS: Short[] = [
-  // ───────────── TEST SLOTU ─────────────
-  // Videonu eklemek için: videoUrl'e public linki yapıştır (Supabase Storage public URL).
-  // title = kanca (0-2 sn), caption = açıklama metni, category = ogret/ilham/hikaye.
-  // videoUrl boş kalırsa renkli placeholder gösterir (hata vermez).
   {
     id: 'test',
     category: 'ogret',
@@ -53,63 +49,7 @@ const FALLBACK_SHORTS: Short[] = [
     lessonTitle: 'Enflasyon ve Yatırım',
     likeCount: 0,
   },
-  // ──────────────────────────────────────
-  {
-    id: 's1',
-    category: 'ogret',
-    title: 'Hisse almak = ortak olmak',
-    caption: 'Ortak, hisse aldığında şirkete küçük bir ortak olursun. Fiyat değil, ortaklık değeri.',
-    accent: '#0B3D40',
-    lessonId: 28,
-    lessonTitle: 'Hisse Senedi Nedir?',
-    likeCount: 1280,
-  },
-  {
-    id: 's2',
-    category: 'ilham',
-    title: 'Bugün başla, mükemmeli bekleme',
-    caption: 'En iyi zaman dünmüş. İkincisi bugün. Küçük başla, sistemi kur.',
-    accent: '#4A2C00',
-    likeCount: 940,
-  },
-  {
-    id: 's3',
-    category: 'hikaye',
-    title: 'Buffett 11 yaşında ilk hissesini aldı',
-    caption: 'Erken başlamak değil, uzun süre kalmak kazandırdı. Sabır en büyük bileşik faiz.',
-    accent: '#2E1A47',
-    likeCount: 3400,
-  },
-  {
-    id: 's4',
-    category: 'ogret',
-    title: 'Endeks borsanın hava durumudur',
-    caption: 'BIST 100 yükseldi diye senin hissen yükselmek zorunda değil. Endeks ortalama, sen kendi bahçene bak.',
-    seriesLabel: 'Bölüm 1',
-    accent: '#08323A',
-    lessonId: 31,
-    lessonTitle: 'Endeksler ve BIST 100',
-    likeCount: 760,
-  },
-  {
-    id: 's5',
-    category: 'ilham',
-    title: 'Panik satışı en pahalı alışkanlık',
-    caption: 'Ekran kırmızıyken karar verme. Plan varsa kriz, fırsattır.',
-    accent: '#3A1212',
-    likeCount: 1510,
-  },
-  {
-    id: 's6',
-    category: 'ogret',
-    title: 'Fiyatı belirleyen görünmez terazi',
-    caption: 'Alıcı istekliyse fiyat yukarı, satıcı çoksa aşağı. Hepsi arz ve talep.',
-    accent: '#10243F',
-    lessonId: 32,
-    lessonTitle: 'Arz, Talep ve Fiyat',
-    likeCount: 620,
-  },
-];
+].filter((s) => !!s.videoUrl);
 
 type ShortsNav = NavigationProp<RootStackParamList>;
 
@@ -279,9 +219,10 @@ export default function ShortsScreen() {
     let cancelled = false;
     fetchShorts()
       .then((items) => {
-        if (!cancelled && items.length > 0) {
-          setShorts(items);
-          setActiveId(items[0].id);
+        const withVideo = items.filter((s) => !!s.videoUrl?.trim());
+        if (!cancelled && withVideo.length > 0) {
+          setShorts(withVideo);
+          setActiveId(withVideo[0].id);
         }
       })
       .catch(() => {

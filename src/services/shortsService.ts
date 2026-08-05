@@ -59,5 +59,7 @@ export async function fetchShorts(): Promise<ShortItem[]> {
     .order('created_at', { ascending: false });
 
   if (error) throw error;
-  return (data ?? []).map((row) => mapRow(row as ShortRow));
+  return (data ?? [])
+    .map((row) => mapRow(row as ShortRow))
+    .filter((item) => !!item.videoUrl?.trim());
 }
