@@ -54,7 +54,7 @@ type ProfileForm = {
 };
 
 export default function ProfileScreen() {
-  const { signOut, session } = useAuth();
+  const { signOut, session, deleteAccount } = useAuth();
   const { isPremium, openPaywall, restorePurchases, isPurchasing } = usePremium();
   const [completedCount, setCompletedCount] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
@@ -79,6 +79,7 @@ export default function ProfileScreen() {
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [isPasswordSectionOpen, setIsPasswordSectionOpen] = useState(false);
   const [showLegal, setShowLegal] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
   const { isSfxEnabled, setSfxEnabled } = useSfx();
 
@@ -305,6 +306,35 @@ export default function ProfileScreen() {
       }
       return next;
     });
+  };
+
+
+  const runDeleteAccount = async () => {
+    setIsDeletingAccount(true);
+    const { error } = await deleteAccount();
+    setIsDeletingAccount(false);
+    if (error) {
+      Alert.alert('Hesap silinemedi', error);
+    }
+  };
+
+  const confirmDeleteAccount = () => {
+    Alert.alert(
+      'Hesabını sil',
+      'Hesabın ve tüm ilerlemen (tamamlanan dersler, profil bilgilerin, günlük kelime geçmişin) kalıcı olarak silinecek. Bu işlem geri alınamaz.\n\nPremium satın alımın Apple hesabına bağlıdır; yeni bir hesapla "Satın Alımları Geri Yükle" diyerek geri alabilirsin.',
+      [
+        { text: 'Vazgeç', style: 'cancel' },
+        {
+          text: 'Devam et',
+          style: 'destructive',
+          onPress: () =>
+            Alert.alert('Emin misin, Ortak?', 'Hesabın kalıcı olarak silinecek.', [
+              { text: 'Vazgeç', style: 'cancel' },
+              { text: 'Hesabımı Sil', style: 'destructive', onPress: runDeleteAccount },
+            ]),
+        },
+      ],
+    );
   };
 
   return (
@@ -541,6 +571,20 @@ export default function ProfileScreen() {
             >
               <Ionicons name="log-out-outline" size={20} color={palette.accent} />
               <Text style={styles.signOutText}>Çıkış Yap</Text>
+            </TouchableOpacity>
+
+            {/* Hesap silme (App Store 5.1.1(v)) */}
+            <TouchableOpacity
+              style={styles.deleteAccountButton}
+              activeOpacity={0.7}
+              onPress={confirmDeleteAccount}
+              disabled={isDeletingAccount}
+            >
+              {isDeletingAccount ? (
+                <ActivityIndicator size="small" color={palette.danger} />
+              ) : (
+                <Text style={styles.deleteAccountText}>Hesabımı Sil</Text>
+              )}
             </TouchableOpacity>
 
             <Text style={styles.versionText}>Moono v1.0.0</Text>
@@ -871,6 +915,18 @@ const styles = StyleSheet.create({
     color: palette.accent,
     fontSize: 16,
     fontWeight: '700',
+  },
+  deleteAccountButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.sm,
+    marginBottom: spacing.sm,
+    minHeight: 40,
+  },
+  deleteAccountText: {
+    color: palette.danger,
+    fontSize: 14,
+    fontWeight: '600',
   },
   versionText: {
     color: palette.muted,

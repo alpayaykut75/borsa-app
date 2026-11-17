@@ -229,6 +229,8 @@ export default function UnitDetailScreen({ route, navigation }: Props) {
       Alert.alert('Ders kilitli', 'Önce bir önceki dersi tamamla, Ortak.');
       return;
     }
+    // Premium kapısı yukarıda paywall ile ele alındı; buraya düşmez.
+    if (status === 'PREMIUM') return;
 
     playSound('correct', { volume: 0.22, maxDurationMs: 200 });
     setTimeout(() => {

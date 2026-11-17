@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session } from '@supabase/supabase-js';
 import { supabase } from '../../lib/supabase';
+import { clearLocalMoonoData, requestAccountDeletion } from '../services/accountService';
 
 type AuthState = {
   session: Session | null;
@@ -13,6 +14,8 @@ type AuthContextType = AuthState & {
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: string | null }>;
+  /** Hesabı ve kullanıcı verilerini kalıcı olarak siler, sonra oturumu kapatır. */
+  deleteAccount: () => Promise<{ error: string | null }>;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -84,6 +87,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await supabase.auth.signOut();
   };
 
+  const deleteAccount = async (): Promise<{ error: string | null }> => {
+    const { data } = await supabase.auth.getSession();
+    const accessToken = data.session?.access_token;
+    if (!accessToken) return { error: 'Oturum bulunamadı. Lütfen tekrar giriş yap.' };
+
+    const result = await requestAccountDeletion(accessToken);
+    if (!result.ok) return { error: result.error ?? 'Hesap silinemedi.' };
+
+    await clearLocalMoonoData();
+    // Kullanıcı sunucuda silindi; yalnızca cihazdaki oturumu kapat.
+    await supabase.auth.signOut({ scope: 'local' });
+    return { error: null };
+  };
+
   const resetPassword = async (email: string): Promise<{ error: string | null }> => {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: 'https://alpayaykut75.github.io/moono-web/',
@@ -93,7 +110,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ ...state, signUp, signIn, signOut, resetPassword }}>
+    <AuthContext.Provider value={{ ...state, signUp, signIn, signOut, resetPassword, deleteAccount }}>
       {children}
     </AuthContext.Provider>
   );

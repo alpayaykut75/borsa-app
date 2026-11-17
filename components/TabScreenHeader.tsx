@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Image, StyleSheet, Text, View, type ImageSourcePropType, type ReactNode } from 'react-native';
+import { useEffect, useState, type ReactNode } from 'react';
+import { Image, StyleSheet, Text, View, type ImageSourcePropType } from 'react-native';
 import { palette, typography } from '../src/constants/theme';
 
 export const TAB_HEADER_HORIZONTAL = 20;

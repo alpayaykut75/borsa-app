@@ -37,7 +37,7 @@ const CATEGORY_META: Record<ShortCategory, { label: string; icon: string; tint: 
 };
 
 // Supabase erişilemez/boşsa kullanılacak yedek içerik (yalnızca videosu olanlar).
-const FALLBACK_SHORTS: Short[] = [
+const FALLBACK_SHORTS: Short[] = ([
   {
     id: 'test',
     category: 'ogret',
@@ -49,7 +49,7 @@ const FALLBACK_SHORTS: Short[] = [
     lessonTitle: 'Enflasyon ve Yatırım',
     likeCount: 0,
   },
-].filter((s) => !!s.videoUrl);
+] as Short[]).filter((s) => !!s.videoUrl);
 
 type ShortsNav = NavigationProp<RootStackParamList>;
 
