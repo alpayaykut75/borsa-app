@@ -6,7 +6,7 @@ export function getBypassEmails(): string[] {
   const raw = process.env.EXPO_PUBLIC_PREMIUM_BYPASS_EMAILS ?? '';
   return raw
     .split(',')
-    .map((e) => e.trim().toLowerCase())
+    .map((e: string) => e.trim().toLowerCase())
     .filter(Boolean);
 }
 

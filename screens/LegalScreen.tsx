@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 // @ts-expect-error - @expo/vector-icons type declarations may be missing
@@ -57,11 +57,11 @@ export default function LegalScreen({ onClose }: { onClose: () => void }) {
   );
 }
 
-function SectionTitle({ children }: { children: string }) {
+function SectionTitle({ children }: { children: ReactNode }) {
   return <Text style={styles.sectionTitle}>{children}</Text>;
 }
 
-function Paragraph({ children }: { children: string }) {
+function Paragraph({ children }: { children: ReactNode }) {
   return <Text style={styles.paragraph}>{children}</Text>;
 }
 
@@ -112,7 +112,7 @@ function PrivacyPolicy() {
 
       <SectionTitle>Hesap Silme</SectionTitle>
       <Paragraph>
-        Hesabınızı ve tüm verilerinizi kalıcı olarak silmek istiyorsanız alpay.aykut@gmail.com adresine e-posta göndererek talepte bulunabilirsiniz. Talebiniz en geç 30 gün içinde işleme alınacaktır.
+        Hesabınızı ve tüm verilerinizi uygulama içinden Profil ekranındaki "Hesabımı Sil" seçeneğiyle anında ve kalıcı olarak silebilirsiniz. Dilerseniz alpay.aykut@gmail.com adresine e-posta göndererek de talepte bulunabilirsiniz; e-posta talepleri en geç 30 gün içinde işleme alınır.
       </Paragraph>
 
       <SectionTitle>İletişim</SectionTitle>

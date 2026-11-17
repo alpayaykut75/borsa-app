@@ -27,3 +27,9 @@ enabled = true
 verify_jwt = true
 import_map = "./functions/moono-daily-word/deno.json"
 entrypoint = "./functions/moono-daily-word/index.ts"
+
+[functions.delete-account]
+enabled = true
+verify_jwt = true
+import_map = "./functions/delete-account/deno.json"
+entrypoint = "./functions/delete-account/index.ts"
