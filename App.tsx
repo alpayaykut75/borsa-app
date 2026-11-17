@@ -255,21 +255,35 @@ function AppContent() {
       setNeedsOnboarding(null);
       return;
     }
+    let cancelled = false;
     const checkProfile = async () => {
-      const { data } = await supabase
-        .from('profiles')
-        .select('first_name')
-        .eq('id', session.user.id)
-        .single();
-      const profileComplete = !!data?.first_name;
-      setNeedsOnboarding(!profileComplete);
+      try {
+        const { data } = await supabase
+          .from('profiles')
+          .select('first_name')
+          .eq('id', session.user.id)
+          .single();
+        if (cancelled) return;
+        const profileComplete = !!data?.first_name;
+        setNeedsOnboarding(!profileComplete);
 
-      if (profileComplete) {
-        const tourSeen = await AsyncStorage.getItem(TOUR_SEEN_KEY);
-        if (!tourSeen) setShowTour(true);
+        if (profileComplete) {
+          const tourSeen = await AsyncStorage.getItem(TOUR_SEEN_KEY);
+          if (!tourSeen) setShowTour(true);
+        }
+      } catch {
+        if (!cancelled) setNeedsOnboarding(true);
       }
     };
     checkProfile();
+    // Ağ takılırsa siyah ekranda kalmasın
+    const fallback = setTimeout(() => {
+      if (!cancelled) setNeedsOnboarding((prev) => (prev === null ? true : prev));
+    }, 8000);
+    return () => {
+      cancelled = true;
+      clearTimeout(fallback);
+    };
   }, [isAuthenticated, session]);
 
   if (showSplash) {

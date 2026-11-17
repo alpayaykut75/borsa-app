@@ -25,6 +25,8 @@ import { useSfx } from '../src/hooks/useSfx';
 import { usePremium } from '../src/contexts/PremiumContext';
 import { isSixthLessonPremiumGate } from '../src/constants/premium';
 import { UNLOCK_ALL_FOR_TEST } from '../src/constants/devFlags';
+import { getLevelImage } from '../src/constants/levelImages';
+import { isBonusUnit, isCheckpointExamLesson } from '../src/constants/curriculum';
 
 type Props = CompositeScreenProps<
   NativeStackScreenProps<HomeStackParamList, 'UnitDetail'>,
@@ -64,22 +66,13 @@ const palette = {
   danger: '#EF4444',
 };
 
-const levelHeaderImages = [
-  require('../assets/levels/level1-cirak.png'),
-  require('../assets/levels/level2-caylak.png'),
-  require('../assets/levels/level3-analist.png'),
-  require('../assets/levels/level4-stratejist.png'),
-  require('../assets/levels/level5-profesyonel.png'),
-];
-
 const getLevelHeaderImage = (unitTitle?: string, unitId?: number) => {
   const titleMatch = unitTitle?.match(/Seviye\s*(\d+)/i);
   const titleLevel = titleMatch ? Number(titleMatch[1]) : NaN;
   const fromTitle = Number.isFinite(titleLevel) ? titleLevel - 1 : -1;
   const fromId = typeof unitId === 'number' ? unitId - 1 : -1;
   const index = fromTitle >= 0 ? fromTitle : fromId;
-  const safeIndex = Math.min(Math.max(index, 0), levelHeaderImages.length - 1);
-  return levelHeaderImages[safeIndex];
+  return getLevelImage(index);
 };
 
 export default function UnitDetailScreen({ route, navigation }: Props) {
@@ -93,16 +86,6 @@ export default function UnitDetailScreen({ route, navigation }: Props) {
   const [levelExamTitle, setLevelExamTitle] = useState('Seviye Geçiş Sınavı');
   const { playSound } = useSfx();
   const { isPremium, firstUnitId, openPaywall } = usePremium();
-
-  const isCheckpointExamLesson = (lesson: Lesson) => {
-    const title = (lesson.title || '').toLowerCase();
-    return (
-      title.includes('ara değerlendirme') ||
-      title.includes('ara degerlendirme') ||
-      lesson.icon_name === 'medal-outline' ||
-      lesson.icon_name === 'document-text-outline'
-    );
-  };
 
   const getCoreLessonIndex = (lessonIndex: number) =>
     lessons
@@ -158,6 +141,17 @@ export default function UnitDetailScreen({ route, navigation }: Props) {
 
   useEffect(() => {
     (async () => {
+      const { data: unitRow } = await supabase
+        .from('units')
+        .select('order_index, title')
+        .eq('id', unitId)
+        .maybeSingle();
+
+      if (isBonusUnit({ order_index: unitRow?.order_index, title: unitRow?.title ?? unitTitle })) {
+        setHasLevelExam(false);
+        return;
+      }
+
       const levelCode = `S${unitId}`;
       const { data } = await supabase
         .from('level_exams')
@@ -176,7 +170,7 @@ export default function UnitDetailScreen({ route, navigation }: Props) {
         setLevelExamTitle(`Seviye ${unitId} Geçiş Sınavı`);
       }
     })();
-  }, [unitId]);
+  }, [unitId, unitTitle]);
 
   // Kullanıcının tamamladığı dersleri çek
   const fetchCompletedLessons = useCallback(async () => {

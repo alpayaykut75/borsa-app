@@ -32,6 +32,7 @@ import {
   LESSON_AUDIO_TRANSCRIPTS,
 } from '../src/constants/lessonAudioTranscripts';
 import { isLastFreeLessonInFirstUnit } from '../src/constants/premium';
+import { isCheckpointExamLesson } from '../src/constants/curriculum';
 
 const palette = {
   background: '#000000',
@@ -254,6 +255,7 @@ export default function LessonScreen({ route, navigation }: Props) {
   const flipAnimations = useRef<Record<number, Animated.Value>>({});
   const flippedState = useRef<Record<number, boolean>>({});
   const pulseAnimation = useRef(new Animated.Value(1)).current;
+  const stepScrollRef = useRef<ScrollView>(null);
 
   const loadSteps = useCallback(async () => {
     setLoading(true);
@@ -272,9 +274,15 @@ export default function LessonScreen({ route, navigation }: Props) {
         .filter((step) => {
           if (HIDE_AUDIO_STEPS_TEMPORARILY && step.type === 'audio') return false;
           const meta = (step.metadata && typeof step.metadata === 'object') ? (step.metadata as Record<string, unknown>) : null;
-          const audioReady =
-            step.type === 'audio' && LESSONS_WITH_AUDIO_READY.includes(lessonId);
-          if (meta?.hidden_in_app === true && !audioReady) return false;
+          if (step.type === 'audio') {
+            const url = meta?.audio_url ?? meta?.audioUrl;
+            const hasUrl = typeof url === 'string' && url.trim().length > 0;
+            // URL hazırsa göster. hidden_in_app yalnızca yer tutucu (boş URL) adımları gizler.
+            if (hasUrl) return true;
+            const audioReady = LESSONS_WITH_AUDIO_READY.includes(lessonId);
+            if (meta?.hidden_in_app === true && !audioReady) return false;
+            return false;
+          }
           if (step.type === 'final_quiz' && meta?.quiz_key === 'S1_LEVEL_FINAL') return false;
           return true;
         })
@@ -358,8 +366,10 @@ export default function LessonScreen({ route, navigation }: Props) {
   }, [audioState.sound]);
 
 
-  // Adım değişince sesi durdur
+  // Adım değişince sesi durdur + okuma konumunu üste al
   useEffect(() => {
+    stepScrollRef.current?.scrollTo({ y: 0, animated: false });
+
     const stopAudio = async () => {
       if (audioState.sound) {
         try {
@@ -554,16 +564,6 @@ export default function LessonScreen({ route, navigation }: Props) {
     let hasNextLessonInUnit = false;
     let showFreeTierEndPaywall = false;
     if (unitId) {
-      const isCheckpointExamLesson = (lesson: { title?: string | null; icon_name?: string | null }) => {
-        const title = (lesson.title || '').toLowerCase();
-        return (
-          title.includes('ara değerlendirme') ||
-          title.includes('ara degerlendirme') ||
-          lesson.icon_name === 'medal-outline' ||
-          lesson.icon_name === 'document-text-outline'
-        );
-      };
-
       const sortedUnitLessons = [...(unitLessonsData ?? [])].sort(
         (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
       );
@@ -1533,6 +1533,8 @@ export default function LessonScreen({ route, navigation }: Props) {
           <View style={[styles.progressBarFill, { width: `${progress * 100}%` }]} />
         </View>
         <ScrollView
+          key={currentStep?.id ?? currentIndex}
+          ref={stepScrollRef}
           style={styles.scrollContainer}
           contentContainerStyle={[
             styles.scrollContent,

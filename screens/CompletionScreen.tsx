@@ -14,6 +14,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../App';
 import { useSfx } from '../src/hooks/useSfx';
 import { usePremium } from '../src/contexts/PremiumContext';
+import { getLevelImage } from '../src/constants/levelImages';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Completion'>;
 type ConfettiPiece = {
@@ -34,21 +35,12 @@ const palette = {
   muted: '#888888',
 };
 
-const levelCharacterImages = [
-  require('../assets/levels/level1-cirak.png'),
-  require('../assets/levels/level2-caylak.png'),
-  require('../assets/levels/level3-analist.png'),
-  require('../assets/levels/level4-stratejist.png'),
-  require('../assets/levels/level5-profesyonel.png'),
-];
-
 const getLevelCharacterImage = (unitTitle?: string, unitId?: number) => {
   const titleMatch = unitTitle?.match(/Seviye\s*(\d+)/i);
   const levelFromTitle = titleMatch ? Number(titleMatch[1]) - 1 : -1;
   const levelFromId = typeof unitId === 'number' ? unitId - 1 : -1;
   const rawIndex = levelFromTitle >= 0 ? levelFromTitle : levelFromId;
-  const safeIndex = Math.min(Math.max(rawIndex, 0), levelCharacterImages.length - 1);
-  return levelCharacterImages[safeIndex];
+  return getLevelImage(rawIndex);
 };
 
 export default function CompletionScreen({ route, navigation }: Props) {

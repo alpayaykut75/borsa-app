@@ -7,6 +7,8 @@ export const UNLOCK_ALL_FOR_TEST = false;
 export const HIDE_AUDIO_STEPS_TEMPORARILY = false;
 
 // Ses dosyası hazır dersler: hidden_in_app=true olsa bile uygulamada gösterilir.
-// (DB güncellemesi yapılamadığında veya ses rollout sırasında kullanılır.)
-export const LESSONS_WITH_AUDIO_READY: number[] = [27]; // Ders 1 = lesson_id 27
+// Asıl kontrol DB metadata.hidden_in_app; bu liste yalnızca yedek.
+export const LESSONS_WITH_AUDIO_READY: number[] = [
+  27, 28, 29, 30, 31, 53, 54, 55, 56, 57, // S1 Çaylak
+];
 

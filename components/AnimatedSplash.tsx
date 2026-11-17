@@ -40,6 +40,13 @@ export default function AnimatedSplash({ onFinish }: AnimatedSplashProps) {
   };
 
   useEffect(() => {
+    // Android release'te video onReady/onError bazen hiç gelmiyor;
+    // native splash kapanmazsa uygulama siyah ekranda kalır.
+    hideNativeSplashOnce();
+    const safetyHide = setTimeout(() => {
+      hideNativeSplashOnce();
+    }, 800);
+
     const loadAndPlaySound = async () => {
       try {
         const storedValue = await AsyncStorage.getItem(SFX_ENABLED_STORAGE_KEY);
@@ -64,6 +71,7 @@ export default function AnimatedSplash({ onFinish }: AnimatedSplashProps) {
     loadAndPlaySound();
 
     return () => {
+      clearTimeout(safetyHide);
       if (soundRef.current) {
         soundRef.current.unloadAsync().catch(() => {});
         soundRef.current = null;
@@ -107,6 +115,7 @@ export default function AnimatedSplash({ onFinish }: AnimatedSplashProps) {
 
     const finishTimer = setTimeout(() => {
       pulseAnimation.stop();
+      hideNativeSplashOnce();
       Animated.parallel([
         Animated.timing(fadeAnim, {
           toValue: 0,
@@ -119,6 +128,7 @@ export default function AnimatedSplash({ onFinish }: AnimatedSplashProps) {
           useNativeDriver: true,
         }),
       ]).start(() => {
+        hideNativeSplashOnce();
         onFinish();
       });
     }, TOTAL_DURATION);

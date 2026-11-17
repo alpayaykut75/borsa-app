@@ -1,6 +1,7 @@
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 // @ts-expect-error - @expo/vector-icons type declarations may be missing
 import { Ionicons } from '@expo/vector-icons';
+import { getLevelImage } from '../src/constants/levelImages';
 
 const palette = {
   background: '#000000',
@@ -12,18 +13,6 @@ const palette = {
   muted: '#888888',
   success: '#16A34A',
   locked: '#888888',
-};
-
-const getLevelLockedImage = (index: number) => {
-  const images = [
-    require('../assets/levels/level1-cirak.png'),
-    require('../assets/levels/level2-caylak.png'),
-    require('../assets/levels/level3-analist.png'),
-    require('../assets/levels/level4-stratejist.png'),
-    require('../assets/levels/level5-profesyonel.png'),
-  ];
-
-  return images[Math.min(index, images.length - 1)];
 };
 
 type Unit = {
@@ -55,7 +44,7 @@ export default function UnitPathItem({
   const isProgressLocked = status === 'LOCKED';
   const isPremiumLocked = status === 'PREMIUM';
   const isLocked = isProgressLocked || isPremiumLocked;
-  const levelLockedImage = getLevelLockedImage(index);
+  const levelLockedImage = getLevelImage(index);
   const visibleCompletedLessons = isProgressLocked ? 0 : completedLessons;
   const progress = totalLessons > 0 ? visibleCompletedLessons / totalLessons : 0;
 
@@ -109,7 +98,6 @@ export default function UnitPathItem({
                 styles.unitDescription,
                 isLocked && styles.unitDescriptionLocked,
               ]}
-              numberOfLines={2}
             >
               {unit.description}
             </Text>

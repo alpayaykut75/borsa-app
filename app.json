@@ -27,12 +27,14 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.alpayaykut.borsaapp",
-      "buildNumber": "22",
+      "buildNumber": "25",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
+      "package": "com.alpayaykut.borsaapp",
+      "versionCode": 4,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#000000"

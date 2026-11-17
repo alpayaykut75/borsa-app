@@ -152,7 +152,6 @@ export default function LessonPathItem({
                   styles.lessonDescription,
                   isLocked && styles.lessonDescriptionLocked,
                 ]}
-                numberOfLines={2}
               >
                 {lesson.description}
               </Text>

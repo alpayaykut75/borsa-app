@@ -13,6 +13,12 @@ import { supabase } from '../lib/supabase';
 import type { HomeStackParamList } from '../App';
 import { useSfx } from '../src/hooks/useSfx';
 import { UNLOCK_ALL_FOR_TEST } from '../src/constants/devFlags';
+import {
+  CORE_LESSONS_PER_LEVEL,
+  CORE_LESSONS_TOTAL,
+  isBonusUnit,
+  isCoreLesson,
+} from '../src/constants/curriculum';
 import { fetchLearningHubSnapshot } from '../src/services/learningHubService';
 import { greetingFirstName, loadProfileDisplay } from '../src/constants/profileStorage';
 import { DEFAULT_PROFILE_AVATAR_ID, getProfileAvatarSource } from '../src/constants/avatars';
@@ -46,6 +52,9 @@ export default function HomeScreen() {
   const [error, setError] = useState<string | null>(null);
   const [completedLessonsByUnit, setCompletedLessonsByUnit] = useState<Record<number, number>>({});
   const [totalLessonsByUnit, setTotalLessonsByUnit] = useState<Record<number, number>>({});
+  /** Kilit zinciri: ara quiz dahil tüm öğeler */
+  const [completedAllByUnit, setCompletedAllByUnit] = useState<Record<number, number>>({});
+  const [totalAllByUnit, setTotalAllByUnit] = useState<Record<number, number>>({});
   const [profileAvatarId, setProfileAvatarId] = useState(DEFAULT_PROFILE_AVATAR_ID);
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
   const [profileFirstName, setProfileFirstName] = useState('');
@@ -76,6 +85,64 @@ export default function HomeScreen() {
   useEffect(() => {
     fetchUnits();
   }, [fetchUnits]);
+
+  const fetchProgress = useCallback(async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data: progressData } = await supabase
+      .from('user_progress')
+      .select('lesson_id, lessons!inner(unit_id, title, icon_name)')
+      .eq('user_id', user.id)
+      .eq('is_completed', true);
+
+    const { data: lessonsData } = await supabase
+      .from('lessons')
+      .select('id, unit_id, title, icon_name');
+
+    if (progressData && lessonsData) {
+      const completedCore: Record<number, number> = {};
+      const totalCore: Record<number, number> = {};
+      const completedAll: Record<number, number> = {};
+      const totalAll: Record<number, number> = {};
+
+      progressData.forEach((item: any) => {
+        const unitId = item.lessons?.unit_id;
+        if (!unitId) return;
+        completedAll[unitId] = (completedAll[unitId] || 0) + 1;
+        if (isCoreLesson(item.lessons)) {
+          completedCore[unitId] = (completedCore[unitId] || 0) + 1;
+        }
+      });
+
+      lessonsData.forEach((lesson: any) => {
+        totalAll[lesson.unit_id] = (totalAll[lesson.unit_id] || 0) + 1;
+        if (isCoreLesson(lesson)) {
+          totalCore[lesson.unit_id] = (totalCore[lesson.unit_id] || 0) + 1;
+        }
+      });
+
+      // Eksik birimde sabit 10 göster (henüz yüklenmediyse)
+      units.forEach((unit) => {
+        if (!isBonusUnit(unit) && !totalCore[unit.id]) {
+          totalCore[unit.id] = CORE_LESSONS_PER_LEVEL;
+        }
+      });
+
+      setCompletedLessonsByUnit(completedCore);
+      setTotalLessonsByUnit(totalCore);
+      setCompletedAllByUnit(completedAll);
+      setTotalAllByUnit(totalAll);
+    }
+  }, [units]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchProgress();
+    }, [fetchProgress]),
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -116,42 +183,6 @@ export default function HomeScreen() {
     }, [refreshHub]),
   );
 
-  useEffect(() => {
-    const fetchProgress = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: progressData } = await supabase
-        .from('user_progress')
-        .select('lesson_id, lessons!inner(unit_id)')
-        .eq('user_id', user.id)
-        .eq('is_completed', true);
-
-      const { data: lessonsData } = await supabase.from('lessons').select('id, unit_id');
-
-      if (progressData && lessonsData) {
-        const completed: Record<number, number> = {};
-        const total: Record<number, number> = {};
-
-        progressData.forEach((item: any) => {
-          const unitId = item.lessons?.unit_id;
-          if (unitId) completed[unitId] = (completed[unitId] || 0) + 1;
-        });
-
-        lessonsData.forEach((lesson: any) => {
-          total[lesson.unit_id] = (total[lesson.unit_id] || 0) + 1;
-        });
-
-        setCompletedLessonsByUnit(completed);
-        setTotalLessonsByUnit(total);
-      }
-    };
-
-    fetchProgress();
-  }, [units]);
-
   const handleStartLesson = (unit: Unit) => {
     playSound('correct', { volume: 0.22, maxDurationMs: 200 });
     const sortedUnits = [...units].sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
@@ -172,19 +203,37 @@ export default function HomeScreen() {
     if (!currentUnit) return 'LOCKED';
 
     const isCompleted = (unit: Unit) => {
-      const completed = completedLessonsByUnit[unit.id] ?? 0;
-      const total = totalLessonsByUnit[unit.id] ?? 0;
+      // Bonus ilerlemeyi etkilemez; ana zincirde ara quiz dahil tamamlanma gerekir
+      const completed = completedAllByUnit[unit.id] ?? 0;
+      const total = totalAllByUnit[unit.id] ?? 0;
       return total > 0 && completed >= total;
     };
 
     if (isCompleted(currentUnit)) return 'COMPLETED';
-    const firstIncompleteIndex = sortedUnits.findIndex((unit) => !isCompleted(unit));
-    return index === (firstIncompleteIndex === -1 ? 0 : firstIncompleteIndex) ? 'ACTIVE' : 'LOCKED';
+
+    // Bonus: yalnızca önceki ana seviyeler (bonus hariç) bitince açılır
+    if (isBonusUnit(currentUnit)) {
+      const mainUnits = sortedUnits.filter((u) => !isBonusUnit(u));
+      const allMainDone = mainUnits.length > 0 && mainUnits.every(isCompleted);
+      return allMainDone ? 'ACTIVE' : 'LOCKED';
+    }
+
+    const mainUnits = sortedUnits.filter((u) => !isBonusUnit(u));
+    const firstIncompleteIndex = mainUnits.findIndex((unit) => !isCompleted(unit));
+    const activeMain = firstIncompleteIndex === -1 ? mainUnits[0] : mainUnits[firstIncompleteIndex];
+    return currentUnit.id === activeMain?.id ? 'ACTIVE' : 'LOCKED';
   };
 
-  const totalCompletedLessons = useMemo(
-    () => Object.values(completedLessonsByUnit).reduce((sum, count) => sum + count, 0),
-    [completedLessonsByUnit],
+  const totalCompletedLessons = useMemo(() => {
+    // Hub kilidi: bonus hariç yalnızca çekirdek dersler
+    return units.reduce((sum, unit) => {
+      if (isBonusUnit(unit)) return sum;
+      return sum + (completedLessonsByUnit[unit.id] ?? 0);
+    }, 0);
+  }, [units, completedLessonsByUnit]);
+  const overallProgressPct = Math.min(
+    100,
+    Math.round((totalCompletedLessons / CORE_LESSONS_TOTAL) * 100),
   );
   const hubUnlocked = UNLOCK_ALL_FOR_TEST || totalCompletedLessons >= HUB_UNLOCK_LESSONS;
 
@@ -283,6 +332,17 @@ export default function HomeScreen() {
         contentContainerStyle={styles.listContent}
         ListHeaderComponent={(
           <View style={styles.listHeader}>
+            <View style={styles.overallProgress}>
+              <View style={styles.overallProgressRow}>
+                <Text style={styles.overallProgressLabel}>Genel ilerleme</Text>
+                <Text style={styles.overallProgressValue}>
+                  {totalCompletedLessons}/{CORE_LESSONS_TOTAL}
+                </Text>
+              </View>
+              <View style={styles.overallTrack}>
+                <View style={[styles.overallFill, { width: `${overallProgressPct}%` }]} />
+              </View>
+            </View>
             {renderHubRow()}
             {hubLoading && (
               <View style={styles.hubHintRow}>
@@ -300,7 +360,7 @@ export default function HomeScreen() {
             status={getUnitStatus(index)}
             onPress={handleStartLesson}
             completedLessons={completedLessonsByUnit[item.id] || 0}
-            totalLessons={totalLessonsByUnit[item.id] || 0}
+            totalLessons={totalLessonsByUnit[item.id] || CORE_LESSONS_PER_LEVEL}
           />
         )}
         showsVerticalScrollIndicator={false}
@@ -330,6 +390,36 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   listContent: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.xxl },
   listHeader: { marginBottom: spacing.md },
+  overallProgress: {
+    marginBottom: spacing.md,
+  },
+  overallProgressRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  overallProgressLabel: {
+    ...typography.caption,
+    color: palette.muted,
+    letterSpacing: 0.2,
+  },
+  overallProgressValue: {
+    ...typography.caption,
+    color: palette.text,
+    fontWeight: '600',
+  },
+  overallTrack: {
+    height: 4,
+    borderRadius: 999,
+    backgroundColor: '#1F1F1F',
+    overflow: 'hidden',
+  },
+  overallFill: {
+    height: '100%',
+    borderRadius: 999,
+    backgroundColor: palette.accent,
+  },
   centerState: {
     flex: 1,
     alignItems: 'center',

@@ -25,13 +25,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   });
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setState({
-        session,
-        isLoading: false,
-        isAnonymous: session?.user?.is_anonymous ?? false,
+    let cancelled = false;
+
+    supabase.auth.getSession()
+      .then(({ data: { session } }) => {
+        if (cancelled) return;
+        setState({
+          session,
+          isLoading: false,
+          isAnonymous: session?.user?.is_anonymous ?? false,
+        });
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setState({ session: null, isLoading: false, isAnonymous: false });
       });
-    });
+
+    // getSession asılı kalırsa siyah loading ekranında kalmasın
+    const fallback = setTimeout(() => {
+      if (cancelled) return;
+      setState((prev) => (prev.isLoading ? { ...prev, isLoading: false } : prev));
+    }, 5000);
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setState({
@@ -41,7 +55,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      cancelled = true;
+      clearTimeout(fallback);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signUp = async (email: string, password: string): Promise<{ error: string | null }> => {

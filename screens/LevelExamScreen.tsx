@@ -37,11 +37,10 @@ type LevelExam = {
 };
 
 const NEXT_LEVEL_TITLES: Record<number, string> = {
-  1: 'Çaylak',
+  1: 'Çırak',
   2: 'Analist',
   3: 'Stratejist',
-  4: 'Profesyonel',
-  5: 'Usta',
+  4: 'Usta',
 };
 
 const trNormalize = (value: string) =>
@@ -63,133 +62,6 @@ const trNormalize = (value: string) =>
     .replace(/dogru/g, 'doğru')
     .replace(/yapman gerekiyor/g, 'yapman gerekiyor')
     .replace(/bir sonraki seviyeye/g, 'bir sonraki seviyeye');
-
-const FIXED_TR_QUESTIONS: Array<{ question: string; options: string[] }> = [
-  {
-    question: "Borsa İstanbul'da işlemlerin güvenle sonuçlanmasını sağlayan (takas/saklama) kurum hangisidir?",
-    options: ['Takasbank', 'SPK', 'İMKB'],
-  },
-  {
-    question: 'Bir hisse senedi aldığınızda teknik olarak ne yapmış olursunuz?',
-    options: [
-      'Şirkete kredi açmış olursunuz',
-      'Şirketin kârına ve varlıklarına ortak olursunuz',
-      'Şirket yönetimine dahil olursunuz',
-    ],
-  },
-  {
-    question: 'Enflasyonun birikimler üzerindeki en temel olumsuz etkisi nedir?',
-    options: ['Hisse fiyatlarının düşmesi', 'Paranın alım gücünün erimesi', 'Bankadaki hesap numarasının değişmesi'],
-  },
-  {
-    question: 'Borsada "Sistemik Risk" neyi ifade eder?',
-    options: [
-      'Tüm piyasayı etkileyen genel kriz durumlarını',
-      'Sadece teknoloji hisselerindeki düşüşü',
-      'Şirket içindeki özel yönetici hatalarını',
-    ],
-  },
-  {
-    question: 'Borsa İstanbul için "şeffaflık" ilkesi neden kritiktir?',
-    options: [
-      'Şirketlerin vergi borçlarını silmek için',
-      'Bilginin tüm yatırımcılara aynı anda ulaşması için',
-      'Borsa binasını korumak için',
-    ],
-  },
-  {
-    question: '"Boğa Piyasası" hangi piyasa ruh halini temsil eder?',
-    options: ['İyimserlik, yükseliş ve coşku', 'Karamsarlık, düşüş ve korku', 'Yatay seyir'],
-  },
-  {
-    question: 'Bir hissenin fiyatı arz ve talep dengesinde ne zaman yükselir?',
-    options: ['Arz talepten büyük olduğunda', 'İşlem hacmi azaldığında', 'Talep arzdan büyük olduğunda'],
-  },
-  {
-    question: '"Trader" ile "Yatırımcı" arasındaki en önemli fark nedir?',
-    options: [
-      'Traderların zenginliği',
-      'Hedeflenen zaman dilimi ve piyasaya ayrılan mesai',
-      'Yatırımcıların borsa binasına girme zorunluluğu',
-    ],
-  },
-  {
-    question: 'Yatırım fonlarının (hazır sepetlerin) en büyük kolaylığı nedir?',
-    options: ['Kazanç garantisi', 'Tek işlemle birçok şirkete ortak olma imkanı', 'Hiçbir ücret almamaları'],
-  },
-  {
-    question: 'Hisse senedi fiyatının temel dayanağı nedir?',
-    options: ['Sadece ekranın rengi', 'Şirketin kârlılığı, büyümesi ve potansiyeli', 'Devletin belirlediği sabit fiyat'],
-  },
-  {
-    question: '"Çeşitlendirme" (sepet yapmak) neyi hedefler?',
-    options: ['Daha fazla vergi ödemeyi', 'Tek şirketten çok kâr etmeyi', 'Tek varlıktaki riski dengelemeyi'],
-  },
-  {
-    question: 'Borsa İstanbul\'daki "Gözetim Sistemleri"nin asıl görevi nedir?',
-    options: [
-      'Kurallara aykırı veya manipülatif işlemleri tespit etmek',
-      'Yatırımcıların kişisel bilgilerini paylaşmak',
-      'Şirketlerin ürün fiyatlarını belirlemek',
-    ],
-  },
-  {
-    question: '"Temettü" dağıtımı yatırımcıya ne sağlar?',
-    options: [
-      'Şirketin tüm borçlarını üstlenme sorumluluğu',
-      'Elde edilen kârdan pay alma imkanı',
-      'Şirketin yönetim kuruluna ömür boyu üyelik',
-    ],
-  },
-  {
-    question: 'Yatırım yaparken "borç" kullanılmaması neden önemlidir?',
-    options: [
-      'Borçlu kişilerin borsaya girişi yasak olduğu için',
-      'Geri ödeme baskısıyla panik kararlar almamak için',
-      'Borç paranın borsada değer taşımaması',
-    ],
-  },
-  {
-    question: 'Hisse senedi fiyatı neden anlık değişir?',
-    options: [
-      'Borsa binasındaki ışıklar değiştikçe',
-      'Bilgi ve beklentiler güncellendikçe',
-      'Şirketler her saniye yeni hisse bastığı için',
-    ],
-  },
-  {
-    question: 'Bilinçli bir yatırımcı için "Risk" kavramı nasıl tanımlanır?',
-    options: [
-      'Borsanın bir oyun alanı olması',
-      'Öngörülemeyen sonuçların ihtimalidir',
-      'Borsanın sadece çok zenginlere uygun olması',
-    ],
-  },
-  {
-    question: 'Yatırımcının en büyük dostu hangisidir?',
-    options: ['Hızlı al-sat yapmak', 'Zaman ve disiplin', 'Şans faktörü'],
-  },
-  {
-    question: '"Ayı Piyasası"nda bir yatırımcının en büyük hatası nedir?',
-    options: [
-      'Şirketine güvenip planına sadık kalması',
-      'Sepetini kontrol etmesi',
-      'Korkuyla hisseyi zararına satıp kaçması',
-    ],
-  },
-  {
-    question: "Borsa İstanbul'daki bir şirket neden halka arz olur?",
-    options: ['İsimlerini daha popüler yapmak için', 'Yatırımcıdan sermaye alarak büyümek için', 'Vergi ödemelerini tamamen durdurmak için'],
-  },
-  {
-    question: 'Seviye 1\'in sonunda ulaşılan "yatırımcı zihniyeti" nedir?',
-    options: [
-      'En çok hisseyi alanın kazandığı bir yarış',
-      'Şansına güvenip zenginleşme çabası',
-      'Değer üreten yapılara ortak olup disiplinle beklemek',
-    ],
-  },
-];
 
 const palette = {
   background: '#000000',
@@ -251,18 +123,7 @@ export default function LevelExamScreen({ route, navigation }: Props) {
         title: data.title,
         intro_text: data.intro_text,
         pass_threshold: metadata?.pass_threshold ?? 15,
-        questions: questions.map((q, idx) => {
-          const fixed = FIXED_TR_QUESTIONS[idx];
-          if (!fixed) return q;
-          return {
-            ...q,
-            question: fixed.question,
-            options: q.options.map((opt, optIdx) => ({
-              ...opt,
-              text: fixed.options[optIdx] ?? opt.text,
-            })),
-          };
-        }),
+        questions,
       });
       setLoading(false);
     })();

@@ -37,8 +37,8 @@ Her ders, kullanıcının sıkılmayacağı "Hap Bilgi" formatında olmalı.
     * ✅ "Devam Et" veya "Sıradaki Görev"
 
 ## 5. SEVİYE YAPISI (YETKİNLİK BAZLI)
-1.  **Çırak:** Temel Kavramlar.
-2.  **Başlangıç:** Hesap & Emirler.
-3.  **Analist:** Temel Analiz.
-4.  **Stratejist:** Teknik Analiz.
-5.  **Üstat:** İleri Stratejiler & Psikoloji.
+1.  **Çaylak:** Temel kavramlar — şirket, pay, borsa.
+2.  **Çırak:** Emir tipleri ve piyasa ekranı.
+3.  **Analist:** Temel analiz / bilanço.
+4.  **Stratejist:** Teknik analiz ve piyasa psikolojisi.
+5.  **Usta:** Risk yönetimi ve yatırım planı.

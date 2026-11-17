@@ -37,14 +37,14 @@ import {
 import ProfileAvatarPicker from '../components/ProfileAvatarPicker';
 import AppButton from '../components/AppButton';
 import { neutrals, spacing } from '../src/constants/theme';
+import { LEVEL_IMAGES } from '../src/constants/levelImages';
+import {
+  CORE_LESSONS_TOTAL,
+  isBonusUnit,
+  isCoreLesson,
+} from '../src/constants/curriculum';
 
-const levelImages = [
-  require('../assets/levels/level1-cirak.png'),
-  require('../assets/levels/level2-caylak.png'),
-  require('../assets/levels/level3-analist.png'),
-  require('../assets/levels/level4-stratejist.png'),
-  require('../assets/levels/level5-profesyonel.png'),
-];
+const levelImages = LEVEL_IMAGES;
 type ProfileForm = {
   firstName: string;
   lastName: string;
@@ -59,7 +59,7 @@ export default function ProfileScreen() {
   const [completedCount, setCompletedCount] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
   const [currentLevel, setCurrentLevel] = useState(1);
-  const [currentLevelTitle, setCurrentLevelTitle] = useState('Çırak');
+  const [currentLevelTitle, setCurrentLevelTitle] = useState('Çaylak');
   const [sfxEnabled, setSfxEnabledState] = useState(true);
   const [profileForm, setProfileForm] = useState<ProfileForm>({
     firstName: '',
@@ -126,32 +126,51 @@ export default function ProfileScreen() {
       if (!user) return;
 
       const [{ data: completedData }, { data: lessonsData }, { data: unitsData }] = await Promise.all([
-        supabase.from('user_progress').select('lesson_id').eq('user_id', user.id).eq('is_completed', true),
-        supabase.from('lessons').select('id'),
+        supabase
+          .from('user_progress')
+          .select('lesson_id, lessons!inner(id, unit_id, title, icon_name)')
+          .eq('user_id', user.id)
+          .eq('is_completed', true),
+        supabase.from('lessons').select('id, unit_id, title, icon_name'),
         supabase.from('units').select('id, title, order_index').order('order_index', { ascending: true }),
       ]);
 
-      setCompletedCount(completedData?.length ?? 0);
-      setTotalCount(lessonsData?.length ?? 0);
+      const unitById = new Map((unitsData ?? []).map((unit: any) => [unit.id, unit]));
+      const coreCompleted = (completedData ?? []).filter((item: any) => {
+        const lesson = item.lessons;
+        const unit = unitById.get(lesson?.unit_id);
+        if (!lesson || !unit || isBonusUnit(unit)) return false;
+        return isCoreLesson(lesson);
+      }).length;
+
+      setCompletedCount(coreCompleted);
+      setTotalCount(CORE_LESSONS_TOTAL);
 
       if (unitsData && unitsData.length > 0) {
-        const { data: allLessonsByUnit } = await supabase.from('lessons').select('id, unit_id');
-        const completedIds = new Set<number>((completedData ?? []).map((item) => item.lesson_id));
+        const completedIds = new Set<number>((completedData ?? []).map((item: any) => item.lesson_id));
         const lessonsMap: Record<number, number[]> = {};
-        (allLessonsByUnit ?? []).forEach((lesson: any) => {
+        (lessonsData ?? []).forEach((lesson: any) => {
+          if (!isCoreLesson(lesson)) return;
+          const unit = unitById.get(lesson.unit_id);
+          if (!unit || isBonusUnit(unit)) return;
           lessonsMap[lesson.unit_id] = lessonsMap[lesson.unit_id] || [];
           lessonsMap[lesson.unit_id].push(lesson.id);
         });
 
-        const firstIncompleteIndex = unitsData.findIndex((unit: any) => {
+        const mainUnits = unitsData.filter((unit: any) => !isBonusUnit(unit));
+        const firstIncompleteIndex = mainUnits.findIndex((unit: any) => {
           const ids = lessonsMap[unit.id] ?? [];
           if (ids.length === 0) return true;
           return ids.some((lessonId) => !completedIds.has(lessonId));
         });
 
-        const activeIndex = firstIncompleteIndex === -1 ? unitsData.length - 1 : firstIncompleteIndex;
-        setCurrentLevel(activeIndex + 1);
-        setCurrentLevelTitle(unitsData[activeIndex]?.title || 'Çırak');
+        const activeUnit =
+          firstIncompleteIndex === -1
+            ? mainUnits[mainUnits.length - 1]
+            : mainUnits[firstIncompleteIndex];
+        const activeIndex = mainUnits.findIndex((unit: any) => unit.id === activeUnit?.id);
+        setCurrentLevel((activeIndex >= 0 ? activeIndex : 0) + 1);
+        setCurrentLevelTitle(activeUnit?.title || 'Çaylak');
       }
     };
     fetchProfileData();
