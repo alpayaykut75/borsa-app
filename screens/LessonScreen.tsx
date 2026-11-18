@@ -33,6 +33,7 @@ import {
 } from '../src/constants/lessonAudioTranscripts';
 import { isLastFreeLessonInFirstUnit } from '../src/constants/premium';
 import { isCheckpointExamLesson } from '../src/constants/curriculum';
+import LessonVideoSummary from '../components/LessonVideoSummary';
 
 const palette = {
   background: '#000000',
@@ -83,6 +84,7 @@ type StepMetadata = {
   // Audio metadata
   audioUrl?: string; // Legacy
   audio_url?: string;
+  video_url?: string; // Varsa ses yerine animasyonlu özet videosu gösterilir
   // Final quiz metadata
   questions?: FinalQuizQuestion[];
   pass_threshold?: number;
@@ -1041,6 +1043,19 @@ export default function LessonScreen({ route, navigation }: Props) {
 
   const renderAudioStep = (step: LessonStep) => {
     const metadata = step.metadata || {};
+    const videoUrl = typeof metadata.video_url === 'string' ? metadata.video_url.trim() : '';
+    if (videoUrl) {
+      return (
+        <View style={styles.videoStepCard}>
+          <Text style={styles.stepTag}>Özet</Text>
+          <LessonVideoSummary
+            key={step.id}
+            uri={videoUrl}
+            onStarted={() => setAudioStartedStepIds((prev) => ({ ...prev, [step.id]: true }))}
+          />
+        </View>
+      );
+    }
     const audioUrl = metadata.audio_url || metadata.audioUrl;
     const rawText = (metadata.text || metadata.body || '').trim();
     const isPlaceholder =
@@ -2112,6 +2127,10 @@ const styles = StyleSheet.create({
     color: palette.danger,
     textAlign: 'center',
     marginBottom: 12,
+  },
+  videoStepCard: {
+    alignItems: 'center',
+    paddingTop: 4,
   },
   audioCard: {
     backgroundColor: palette.card,
