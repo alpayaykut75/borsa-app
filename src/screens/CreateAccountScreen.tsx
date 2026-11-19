@@ -77,9 +77,12 @@ export default function CreateAccountScreen({ route, navigation }: Props) {
       return;
     }
 
-    Alert.alert('Hesabın hazır, Ortak!', 'İlerlemen hesabına kaydedildi. Kaldığın yerden devam edebilirsin.', [
-      { text: 'Devam Et', onPress: close },
-    ]);
+    // Hesap kalıcı oldu. Profilde ad yoksa uygulama şimdi kısa tanışma formunu açar.
+    close();
+    Alert.alert(
+      'Hesabın hazır, Ortak!',
+      'İlerlemen hesabına kaydedildi, kaldığın yerden devam edebilirsin.',
+    );
   };
 
   const handleHaveAccount = () => {

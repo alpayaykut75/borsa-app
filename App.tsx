@@ -262,6 +262,17 @@ function AppContent() {
     }
     let cancelled = false;
     const checkProfile = async () => {
+      // Misafir: form yok, doğrudan uygulamaya. Ad vb. hesap oluşturulunca sorulur.
+      if (session.user.is_anonymous) {
+        setNeedsOnboarding(false);
+        try {
+          const tourSeen = await AsyncStorage.getItem(TOUR_SEEN_KEY);
+          if (!cancelled && !tourSeen) setShowTour(true);
+        } catch {
+          // tur bilgisi okunamazsa turu atla
+        }
+        return;
+      }
       try {
         const { data } = await supabase
           .from('profiles')
@@ -331,9 +342,11 @@ function AppContent() {
         <StatusBar style="light" />
         <OnboardingScreen
           userId={session!.user.id}
-          onComplete={() => {
+          onComplete={async () => {
             setNeedsOnboarding(false);
-            setShowTour(true);
+            // Misafirken turu görmüş olabilir; tekrar gösterme.
+            const tourSeen = await AsyncStorage.getItem(TOUR_SEEN_KEY).catch(() => null);
+            if (!tourSeen) setShowTour(true);
           }}
         />
       </>
