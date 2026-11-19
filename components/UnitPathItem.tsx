@@ -20,13 +20,14 @@ type Unit = {
   title: string;
   description?: string;
   order_index?: number;
+  coming_soon?: boolean;
 };
 
 type UnitPathItemProps = {
   unit: Unit;
   index: number;
   totalUnits: number;
-  status: 'LOCKED' | 'ACTIVE' | 'COMPLETED' | 'PREMIUM';
+  status: 'LOCKED' | 'ACTIVE' | 'COMPLETED' | 'PREMIUM' | 'SOON';
   onPress: (unit: Unit) => void;
   completedLessons?: number;
   totalLessons?: number;
@@ -43,9 +44,10 @@ export default function UnitPathItem({
 }: UnitPathItemProps) {
   const isProgressLocked = status === 'LOCKED';
   const isPremiumLocked = status === 'PREMIUM';
-  const isLocked = isProgressLocked || isPremiumLocked;
+  const isComingSoon = status === 'SOON';
+  const isLocked = isProgressLocked || isPremiumLocked || isComingSoon;
   const levelLockedImage = getLevelImage(index);
-  const visibleCompletedLessons = isProgressLocked ? 0 : completedLessons;
+  const visibleCompletedLessons = isProgressLocked || isComingSoon ? 0 : completedLessons;
   const progress = totalLessons > 0 ? visibleCompletedLessons / totalLessons : 0;
 
   const handlePress = () => {
@@ -73,6 +75,11 @@ export default function UnitPathItem({
           {isProgressLocked && (
             <View style={styles.lockBadge}>
               <Ionicons name="lock-closed" size={16} color={palette.locked} />
+            </View>
+          )}
+          {isComingSoon && (
+            <View style={styles.lockBadge}>
+              <Ionicons name="hourglass-outline" size={14} color={palette.locked} />
             </View>
           )}
           {isPremiumLocked && (
@@ -103,8 +110,14 @@ export default function UnitPathItem({
             </Text>
           )}
           
+          {isComingSoon && (
+            <View style={styles.soonPill}>
+              <Text style={styles.soonPillText}>Yakında</Text>
+            </View>
+          )}
+
           {/* Progress Bar */}
-          {totalLessons > 0 && (
+          {!isComingSoon && totalLessons > 0 && (
             <View style={styles.progressContainer}>
               <View style={styles.progressBar}>
                 <View 
@@ -125,9 +138,9 @@ export default function UnitPathItem({
         {/* Arrow — kilitli seviyede de önizleme için göster */}
         <View style={styles.arrowContainer}>
           <Ionicons
-            name="chevron-forward"
+            name={isComingSoon ? 'lock-closed' : 'chevron-forward'}
             size={20}
-            color={isProgressLocked ? palette.locked : isPremiumLocked ? palette.accent : palette.muted}
+            color={isProgressLocked || isComingSoon ? palette.locked : isPremiumLocked ? palette.accent : palette.muted}
           />
         </View>
       </View>
@@ -238,6 +251,22 @@ const styles = StyleSheet.create({
   },
   progressBarFillLocked: {
     backgroundColor: '#555555',
+  },
+  soonPill: {
+    alignSelf: 'flex-start',
+    marginTop: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#444444',
+    backgroundColor: '#111111',
+  },
+  soonPillText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#9A9A9A',
+    letterSpacing: 0.3,
   },
   arrowContainer: {
     width: 24,
