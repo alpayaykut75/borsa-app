@@ -24,7 +24,11 @@ import { supabase } from '../lib/supabase';
 import type { RootStackParamList } from '../App';
 import { useSfx } from '../src/hooks/useSfx';
 import { usePremium } from '../src/contexts/PremiumContext';
-import { HIDE_AUDIO_STEPS_TEMPORARILY, LESSONS_WITH_AUDIO_READY } from '../src/constants/devFlags';
+import {
+  HIDE_AUDIO_STEPS_TEMPORARILY,
+  LESSONS_WITH_AUDIO_READY,
+  MISSION_PREVIEW_IN_DEV,
+} from '../src/constants/devFlags';
 import {
   AUDIO_CAPTION_WINDOW_WORDS,
   AUDIO_STEP_HEADLINE,
@@ -34,6 +38,8 @@ import {
 import { isLastFreeLessonInFirstUnit } from '../src/constants/premium';
 import { isCheckpointExamLesson } from '../src/constants/curriculum';
 import LessonVideoSummary from '../components/LessonVideoSummary';
+import MissionStep, { type MissionMetadata } from '../components/MissionStep';
+import { MISSION_PREVIEW } from '../src/content/missionPreview';
 
 const palette = {
   background: '#000000',
@@ -55,7 +61,7 @@ const AUDIO_CAPTION_CLIP_HEIGHT = AUDIO_CAPTION_LINE_HEIGHT * AUDIO_CAPTION_VISI
 const { width: windowWidth } = Dimensions.get('window');
 const flipCardWidth = Math.min(windowWidth - 40, 420);
 
-type LessonStepType = 'read' | 'quiz' | 'flashcard' | 'audio' | 'final_quiz';
+type LessonStepType = 'read' | 'quiz' | 'flashcard' | 'audio' | 'final_quiz' | 'mission';
 
 type QuizOption = {
   id: string;
@@ -92,6 +98,16 @@ type StepMetadata = {
   text?: string;
   body?: string;
   image_keyword?: string;
+  // Mission ("Sıra sende") metadata: ayrıntılar components/MissionStep.tsx
+  variant?: MissionMetadata['variant'];
+  category?: string;
+  prompt?: string;
+  reason_prompt?: string;
+  reasons?: string[];
+  feedback?: string;
+  scenario_prompt?: string;
+  scenarios?: MissionMetadata['scenarios'];
+  disclaimer?: string;
 } | null;
 
 type LessonStep = {
@@ -221,6 +237,7 @@ export default function LessonScreen({ route, navigation }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [quizState, setQuizState] = useState<QuizState>({});
+  const [missionState, setMissionState] = useState<Record<number, { done: boolean; hint: string }>>({});
   const [finalQuizState, setFinalQuizState] = useState<FinalQuizState>({
     hasStarted: false,
     currentQuestionIndex: 0,
@@ -318,7 +335,28 @@ export default function LessonScreen({ route, navigation }: Props) {
           ? normalized.filter((s, i) => !(s.type === 'audio' && i > lastFinalQuizIndex))
           : normalized;
 
-      setSteps(withoutTrailingAudio);
+      // Geliştirme önizlemesi: DB'de görev yoksa önizleme görevini 14. adımın yerine koy.
+      let finalSteps: LessonStep[] = withoutTrailingAudio;
+      const preview = MISSION_PREVIEW[lessonId];
+      if (__DEV__ && MISSION_PREVIEW_IN_DEV && preview && !finalSteps.some((st) => st.type === 'mission')) {
+        const missionStep: LessonStep = {
+          id: -lessonId,
+          lesson_id: lessonId,
+          order_index: 14,
+          type: 'mission',
+          title: preview.title,
+          content: null,
+          metadata: preview.metadata as StepMetadata,
+        };
+        const at = finalSteps.findIndex((st) => st.order_index === 14);
+        finalSteps =
+          at >= 0
+            ? [...finalSteps.slice(0, at), missionStep, ...finalSteps.slice(at + 1)]
+            : [...finalSteps, missionStep];
+      }
+
+      setSteps(finalSteps);
+      setMissionState({});
       setCurrentIndex(0);
       setQuizState({});
       setFinalQuizState({
@@ -463,6 +501,7 @@ export default function LessonScreen({ route, navigation }: Props) {
     if (!currentStep) return false;
     if (currentStep.type === 'quiz') return quizState.isCorrect === true;
     if (currentStep.type === 'flashcard') return Boolean(flippedState.current[currentStep.id]);
+    if (currentStep.type === 'mission') return missionState[currentStep.id]?.done === true;
     if (currentStep.type === 'final_quiz') {
       const metadata = currentStep.metadata || {};
       const questions = Array.isArray(metadata.questions) ? metadata.questions : [];
@@ -476,7 +515,7 @@ export default function LessonScreen({ route, navigation }: Props) {
       return Boolean(finalQuizState.selectedAnswers[currentQuestionKey]);
     }
     return true;
-  }, [currentStep, quizState, finalQuizState, flashcardFlipTick]);
+  }, [currentStep, quizState, finalQuizState, flashcardFlipTick, missionState]);
 
   const handleOptionSelect = (selectedOptionId: string, correctOptionId?: string) => {
     if (quizState.isCorrect) return;
@@ -1390,6 +1429,16 @@ export default function LessonScreen({ route, navigation }: Props) {
         return renderAudioStep(currentStep);
       case 'final_quiz':
         return renderFinalQuizStep(currentStep);
+      case 'mission': {
+        const stepId = currentStep.id;
+        return (
+          <MissionStep
+            key={stepId}
+            metadata={(currentStep.metadata || {}) as MissionMetadata}
+            onStateChange={(st) => setMissionState((prev) => ({ ...prev, [stepId]: st }))}
+          />
+        );
+      }
       default:
         // Fallback: Bilinmeyen tip için boş görünüm
         return (
@@ -1579,7 +1628,9 @@ export default function LessonScreen({ route, navigation }: Props) {
                         : (finalQuizState.currentQuestionIndex >= (((currentStep.metadata || {}).questions as FinalQuizQuestion[] | undefined)?.length ?? 1) - 1
                             ? 'Testi Bitir'
                             : 'Sıradaki Soru')))
-                : (currentIndex === steps.length - 1 ? 'Bitir' : 'Devam Et')}
+                : currentStep?.type === 'mission' && !missionState[currentStep.id]?.done
+                  ? (missionState[currentStep.id]?.hint || 'Seçimini yap')
+                  : (currentIndex === steps.length - 1 ? 'Bitir' : 'Devam Et')}
             </Text>
           )}
         </TouchableOpacity>
