@@ -61,7 +61,7 @@ const AUDIO_CAPTION_CLIP_HEIGHT = AUDIO_CAPTION_LINE_HEIGHT * AUDIO_CAPTION_VISI
 const { width: windowWidth } = Dimensions.get('window');
 const flipCardWidth = Math.min(windowWidth - 40, 420);
 
-type LessonStepType = 'read' | 'quiz' | 'flashcard' | 'audio' | 'final_quiz' | 'mission';
+type LessonStepType = 'read' | 'quiz' | 'flashcard' | 'audio' | 'final_quiz' | 'mission' | 'review_intro';
 
 type QuizOption = {
   id: string;
@@ -108,6 +108,9 @@ type StepMetadata = {
   scenario_prompt?: string;
   scenarios?: MissionMetadata['scenarios'];
   disclaimer?: string;
+  // Yanlışları tekrar: uygulamanın oluşturduğu tekrar adımları (DB'de yok)
+  review_of?: number; // asıl quiz adımının id'si
+  review_count?: number; // review_intro: kaç soru tekrar edilecek
 } | null;
 
 type LessonStep = {
@@ -238,6 +241,11 @@ export default function LessonScreen({ route, navigation }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [quizState, setQuizState] = useState<QuizState>({});
   const [missionState, setMissionState] = useState<Record<number, { done: boolean; hint: string }>>({});
+  /** Alıştırmalarda ilk denemede yanlış cevaplanan quiz adımlarının id'leri (sırayla). */
+  const [firstTryWrongIds, setFirstTryWrongIds] = useState<number[]>([]);
+  /** İlk cevabı verilmiş quiz adımları (ilk deneme takibi için). */
+  const answeredQuizIds = useRef<Set<number>>(new Set());
+  const [reviewInserted, setReviewInserted] = useState(false);
   const [finalQuizState, setFinalQuizState] = useState<FinalQuizState>({
     hasStarted: false,
     currentQuestionIndex: 0,
@@ -357,6 +365,9 @@ export default function LessonScreen({ route, navigation }: Props) {
 
       setSteps(finalSteps);
       setMissionState({});
+      setFirstTryWrongIds([]);
+      answeredQuizIds.current = new Set();
+      setReviewInserted(false);
       setCurrentIndex(0);
       setQuizState({});
       setFinalQuizState({
@@ -489,9 +500,19 @@ export default function LessonScreen({ route, navigation }: Props) {
   ]);
   const isCompleted = !loading && steps.length > 0 && currentIndex >= steps.length;
   const progress = steps.length > 0 ? (currentIndex + 1) / steps.length : 0;
-  const stepHeaderText = steps.length > 0
-    ? `Adım ${Math.min(currentIndex + 1, steps.length)} / ${steps.length}`
-    : 'Adım 0 / 0';
+  // Tekrar adımları sayaca dahil edilmez; ders hep "Adım N / 20" gibi görünür.
+  const isReviewStep = (st?: LessonStep) =>
+    !!st && (st.type === 'review_intro' || st.metadata?.review_of != null);
+  const baseStepCount = steps.filter((st) => !isReviewStep(st)).length;
+  const baseStepPosition = steps.slice(0, currentIndex + 1).filter((st) => !isReviewStep(st)).length;
+  const reviewQuestionSteps = steps.filter((st) => st.metadata?.review_of != null);
+  const stepHeaderText = isReviewStep(currentStep)
+    ? currentStep?.type === 'review_intro'
+      ? 'Tekrar'
+      : `Tekrar ${reviewQuestionSteps.findIndex((st) => st.id === currentStep?.id) + 1} / ${reviewQuestionSteps.length}`
+    : steps.length > 0
+      ? `Adım ${Math.min(baseStepPosition, baseStepCount)} / ${baseStepCount}`
+      : 'Adım 0 / 0';
   const headerSubtitleText =
     currentStep?.type === 'final_quiz' && finalQuizState.isSubmitted
       ? 'Bölüm Sonu Testi • Sonuç'
@@ -528,6 +549,15 @@ export default function LessonScreen({ route, navigation }: Props) {
 
     const isCorrect = selectedOptionId === correctOptionId;
     setQuizState({ selectedOptionId, isCorrect });
+
+    // İlk deneme takibi: asıl (tekrar olmayan) alıştırmada ilk cevap yanlışsa tekrar listesine ekle.
+    if (currentStep && currentStep.type === 'quiz' && currentStep.metadata?.review_of == null) {
+      const id = currentStep.id;
+      if (!answeredQuizIds.current.has(id)) {
+        answeredQuizIds.current.add(id);
+        if (!isCorrect) setFirstTryWrongIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
+      }
+    }
 
     if (isCorrect) {
       playSound('correct');
@@ -652,7 +682,41 @@ export default function LessonScreen({ route, navigation }: Props) {
     }
   }, [lessonId, unitId, unitTitle, entryStatus, navigation, isPremium, firstUnitId]);
 
+  /**
+   * Yanlışları tekrar: özet (audio) ya da final adımına geçmeden hemen önce,
+   * ilk denemede yanlış yapılan alıştırmaları bir kez daha sorar. Yanlış yoksa hiç çıkmaz.
+   */
+  const insertReviewIfNeeded = (): boolean => {
+    if (reviewInserted || firstTryWrongIds.length === 0) return false;
+    const next = steps[currentIndex + 1];
+    if (!next || (next.type !== 'audio' && next.type !== 'final_quiz')) return false;
+    const wrongSteps = firstTryWrongIds
+      .map((id) => steps.find((st) => st.id === id))
+      .filter((st): st is LessonStep => !!st);
+    if (wrongSteps.length === 0) return false;
+
+    const intro: LessonStep = {
+      id: -900000 - lessonId,
+      lesson_id: lessonId,
+      order_index: next.order_index - 0.5,
+      type: 'review_intro',
+      title: 'Yanlışlarını Tekrar Et',
+      content: null,
+      metadata: { review_count: wrongSteps.length },
+    };
+    const clones: LessonStep[] = wrongSteps.map((st, i) => ({
+      ...st,
+      id: -800000 - st.id,
+      order_index: next.order_index - 0.4 + i * 0.01,
+      metadata: { ...(st.metadata || {}), review_of: st.id },
+    }));
+    setSteps((prev) => [...prev.slice(0, currentIndex + 1), intro, ...clones, ...prev.slice(currentIndex + 1)]);
+    setReviewInserted(true);
+    return true;
+  };
+
   const goToNextRegularStep = async () => {
+    insertReviewIfNeeded();
     if (currentIndex === steps.length - 1) {
       playSound('complete');
       await completeLessonAndNavigate();
@@ -849,6 +913,22 @@ export default function LessonScreen({ route, navigation }: Props) {
           </View>
         )}
         {!!markdown && <Markdown style={markdownStyles}>{markdown}</Markdown>}
+      </View>
+    );
+  };
+
+  const renderReviewIntroStep = (step: LessonStep) => {
+    const count = step.metadata?.review_count ?? 0;
+    return (
+      <View style={styles.card}>
+        <View style={styles.reviewIconWrap}>
+          <Ionicons name="refresh" size={30} color={palette.accent} />
+        </View>
+        <Text style={styles.reviewTitle}>Yanlışlarını tekrar edelim</Text>
+        <Text style={styles.reviewText}>
+          Ortak, alıştırmalarda {count} soruda ilk seferde takıldın. Bu çok normal; şimdi onlara bir kez
+          daha bakalım. Sonra özet ve final seni bekliyor.
+        </Text>
       </View>
     );
   };
@@ -1429,6 +1509,8 @@ export default function LessonScreen({ route, navigation }: Props) {
         return renderAudioStep(currentStep);
       case 'final_quiz':
         return renderFinalQuizStep(currentStep);
+      case 'review_intro':
+        return renderReviewIntroStep(currentStep);
       case 'mission': {
         const stepId = currentStep.id;
         return (
@@ -1774,6 +1856,31 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: palette.border,
     marginBottom: 24,
+  },
+  reviewIconWrap: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    borderWidth: 1,
+    borderColor: palette.accent,
+    backgroundColor: 'rgba(0, 196, 204, 0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+    marginBottom: 18,
+  },
+  reviewTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: palette.text,
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  reviewText: {
+    fontSize: 16,
+    lineHeight: 24,
+    color: palette.muted,
+    textAlign: 'center',
   },
   stepTag: {
     fontSize: 13,
