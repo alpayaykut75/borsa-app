@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigation } from '@react-navigation/native';
 import { Alert, Image, Modal, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View, ActivityIndicator } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -54,7 +55,8 @@ type ProfileForm = {
 };
 
 export default function ProfileScreen() {
-  const { signOut, session, deleteAccount } = useAuth();
+  const { signOut, session, deleteAccount, isAnonymous } = useAuth();
+  const navigation = useNavigation<any>();
   const { isPremium, openPaywall, restorePurchases, isPurchasing } = usePremium();
   const [completedCount, setCompletedCount] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
@@ -432,6 +434,21 @@ export default function ProfileScreen() {
         {!isEditMode && (
           <>
             {/* Hesap ve Güvenlik (öncelikli) */}
+            {isAnonymous ? (
+            <View style={[styles.card, styles.guestCard]}>
+              <Text style={styles.cardLabelFixed}>MİSAFİR HESAP</Text>
+              <Text style={styles.guestHint}>
+                Şu an hesapsız kullanıyorsun. Hesap oluşturursan ilerlemen güvende olur ve telefon
+                değiştirsen bile kaldığın yerden devam edersin.
+              </Text>
+              <AppButton
+                title="Hesap Oluştur"
+                onPress={() => navigation.navigate('CreateAccount')}
+                variant="secondary"
+                style={styles.premiumActionBtn}
+              />
+            </View>
+            ) : (
             <View style={styles.card}>
               <Text style={styles.cardLabelFixed}>HESAP VE GÜVENLİK</Text>
               {session?.user?.email ? (
@@ -477,6 +494,8 @@ export default function ProfileScreen() {
               )}
             </View>
 
+            )}
+
             {/* Seviye Kartı */}
             <View style={styles.card}>
               <View style={styles.levelRow}>
@@ -508,7 +527,9 @@ export default function ProfileScreen() {
                   <AppButton
                     title="Premium'a Geç"
                     onPress={() =>
-                      openPaywall({
+                      isAnonymous
+                        ? navigation.navigate('CreateAccount', { required: true })
+                        : openPaywall({
                         title: 'Premium ile devam et',
                         subtitle:
                           'İlk 5 ders ücretsiz. 6. dersten itibaren tüm dersler ve Moono asistanı Premium ile açılır.',
@@ -563,10 +584,16 @@ export default function ProfileScreen() {
               style={styles.signOutButton}
               activeOpacity={0.85}
               onPress={() => {
-                Alert.alert('Çıkış Yap', 'Hesabından çıkış yapmak istediğine emin misin?', [
+                Alert.alert(
+                  'Çıkış Yap',
+                  isAnonymous
+                    ? 'Misafir olarak kullanıyorsun. Çıkış yaparsan ilerlemen kaybolur. Önce hesap oluşturmanı öneririz.'
+                    : 'Hesabından çıkış yapmak istediğine emin misin?',
+                  [
                   { text: 'Vazgeç', style: 'cancel' },
                   { text: 'Çıkış Yap', style: 'destructive', onPress: signOut },
-                ]);
+                ],
+                );
               }}
             >
               <Ionicons name="log-out-outline" size={20} color={palette.accent} />
@@ -875,6 +902,15 @@ const styles = StyleSheet.create({
     color: palette.muted,
     fontSize: 13,
     lineHeight: 19,
+  },
+  guestCard: {
+    borderColor: '#00C4CC',
+  },
+  guestHint: {
+    color: '#A8A8A8',
+    fontSize: 14,
+    lineHeight: 20,
+    marginTop: 8,
   },
   emailText: {
     color: palette.text,
