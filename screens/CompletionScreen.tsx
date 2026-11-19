@@ -17,8 +17,8 @@ import { useSfx } from '../src/hooks/useSfx';
 import { usePremium } from '../src/contexts/PremiumContext';
 import { useAuth } from '../src/contexts/AuthContext';
 
-/** Misafire "hesap oluştur" önerisi yalnızca bir kez gösterilir. */
-const GUEST_NUDGE_SHOWN_KEY = 'moono.guestAccountNudgeShown';
+/** Misafire "hesap oluştur" önerisi her misafir için yalnızca bir kez gösterilir. */
+const guestNudgeKey = (userId: string) => `moono.guestAccountNudgeShown.${userId}`;
 import { getLevelImage } from '../src/constants/levelImages';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Completion'>;
@@ -60,7 +60,8 @@ export default function CompletionScreen({ route, navigation }: Props) {
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const { playSound } = useSfx();
   const { openPaywall } = usePremium();
-  const { isAnonymous } = useAuth();
+  const { isAnonymous, session } = useAuth();
+  const guestUserId = session?.user?.id;
   const [guestNudge, setGuestNudge] = useState(false);
   // Misafir 5. dersi bitirdi: premium'dan önce hesap zorunlu.
   const guestMustCreateAccount = isAnonymous && showFreeTierEndPaywall;
@@ -89,13 +90,14 @@ export default function CompletionScreen({ route, navigation }: Props) {
   }, [navigation]);
 
   useEffect(() => {
-    if (!isAnonymous || showFreeTierEndPaywall) return;
+    if (!isAnonymous || showFreeTierEndPaywall || !guestUserId) return;
     let cancelled = false;
     (async () => {
       try {
-        const shown = await AsyncStorage.getItem(GUEST_NUDGE_SHOWN_KEY);
+        const key = guestNudgeKey(guestUserId);
+        const shown = await AsyncStorage.getItem(key);
         if (cancelled || shown) return;
-        await AsyncStorage.setItem(GUEST_NUDGE_SHOWN_KEY, '1');
+        await AsyncStorage.setItem(key, '1');
         if (!cancelled) setGuestNudge(true);
       } catch {
         // depolama okunamazsa öneriyi atla
