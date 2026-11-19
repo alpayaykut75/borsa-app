@@ -32,6 +32,7 @@ type Unit = {
   title: string;
   description?: string;
   order_index?: number;
+  coming_soon?: boolean;
 };
 
 const palette = {
@@ -188,6 +189,13 @@ export default function HomeScreen() {
     const sortedUnits = [...units].sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
     const index = sortedUnits.findIndex((u) => u.id === unit.id);
     const status = getUnitStatus(index);
+    if (status === 'SOON') {
+      Alert.alert(
+        'Yakında',
+        'Bu seviye hazırlanıyor, ortak. Çok yakında burada olacak!',
+      );
+      return;
+    }
     navigation.navigate('UnitDetail', {
       unitId: unit.id,
       unitTitle: unit.title,
@@ -195,12 +203,15 @@ export default function HomeScreen() {
     });
   };
 
-  const getUnitStatus = (index: number): 'LOCKED' | 'ACTIVE' | 'COMPLETED' => {
+  const getUnitStatus = (index: number): 'LOCKED' | 'ACTIVE' | 'COMPLETED' | 'SOON' => {
     if (UNLOCK_ALL_FOR_TEST) return 'ACTIVE';
 
     const sortedUnits = [...units].sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
     const currentUnit = sortedUnits[index];
     if (!currentUnit) return 'LOCKED';
+
+    // İçeriği hazırlanan seviye: DB'de units.coming_soon = true (build gerekmeden açılır)
+    if (currentUnit.coming_soon) return 'SOON';
 
     const isCompleted = (unit: Unit) => {
       // Bonus ilerlemeyi etkilemez; ana zincirde ara quiz dahil tamamlanma gerekir
