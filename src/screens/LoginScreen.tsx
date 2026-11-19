@@ -19,13 +19,30 @@ type Props = {
   onNavigateToSignUp: () => void;
   onNavigateToForgotPassword: () => void;
   onSignIn: (email: string, password: string) => Promise<{ error: string | null }>;
+  onContinueAsGuest: () => Promise<{ error: string | null }>;
 };
 
-export default function LoginScreen({ onNavigateToSignUp, onNavigateToForgotPassword, onSignIn }: Props) {
+export default function LoginScreen({
+  onNavigateToSignUp,
+  onNavigateToForgotPassword,
+  onSignIn,
+  onContinueAsGuest,
+}: Props) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [guestLoading, setGuestLoading] = useState(false);
+
+  const handleGuest = async () => {
+    setError('');
+    setGuestLoading(true);
+    const result = await onContinueAsGuest();
+    setGuestLoading(false);
+    if (result.error) {
+      setError('Misafir girişi şu an yapılamadı. Biraz sonra tekrar dene.');
+    }
+  };
 
   const handleLogin = async () => {
     setError('');
@@ -115,6 +132,26 @@ export default function LoginScreen({ onNavigateToSignUp, onNavigateToForgotPass
               <Text style={styles.linkText}>Şifremi Unuttum</Text>
             </TouchableOpacity>
           </View>
+
+          <View style={styles.dividerRow}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>ya da</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
+          <TouchableOpacity
+            style={[styles.guestButton, guestLoading && styles.buttonDisabled]}
+            activeOpacity={0.85}
+            onPress={handleGuest}
+            disabled={guestLoading || loading}
+          >
+            {guestLoading ? (
+              <ActivityIndicator color={palette.accent} size="small" />
+            ) : (
+              <Text style={styles.guestButtonText}>Misafir Olarak Başla</Text>
+            )}
+          </TouchableOpacity>
+          <Text style={styles.guestHint}>Kayıt olmadan ilk dersine hemen başla.</Text>
 
           <View style={styles.footer}>
             <Text style={styles.footerText}>Hesabın yok mu?</Text>
@@ -207,10 +244,46 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 24,
+    marginBottom: 18,
+    gap: 12,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: palette.border,
+  },
+  dividerText: {
+    color: palette.muted,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  guestButton: {
+    borderWidth: 1.5,
+    borderColor: palette.accent,
+    borderRadius: 14,
+    paddingVertical: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  guestButtonText: {
+    color: palette.accent,
+    fontSize: 17,
+    fontWeight: '700',
+  },
+  guestHint: {
+    color: palette.muted,
+    fontSize: 13,
+    textAlign: 'center',
+    marginTop: 8,
+  },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 32,
+    marginTop: 28,
   },
   footerText: {
     color: palette.muted,

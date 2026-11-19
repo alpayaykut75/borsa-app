@@ -24,6 +24,7 @@ import AppTourOverlay, { TOUR_SEEN_KEY } from './components/AppTourOverlay';
 import LoginScreen from './src/screens/LoginScreen';
 import SignupScreen from './src/screens/SignupScreen';
 import ForgotPasswordScreen from './src/screens/ForgotPasswordScreen';
+import CreateAccountScreen from './src/screens/CreateAccountScreen';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 import { PremiumProvider } from './src/contexts/PremiumContext';
@@ -52,6 +53,8 @@ export type RootStackParamList = {
     unitId: number;
     unitTitle: string;
   };
+  /** Misafiri kalıcı hesaba çevirme. required: 6. ders kapısı (geçilemez). */
+  CreateAccount: { required?: boolean } | undefined;
 };
 
 export type HomeStackParamList = {
@@ -183,7 +186,7 @@ function MainTabs() {
 }
 
 function AuthFlow() {
-  const { signIn, signUp, resetPassword } = useAuth();
+  const { signIn, signUp, resetPassword, signInAsGuest } = useAuth();
   const [screen, setScreen] = useState<AuthScreenName>('Login');
 
   if (screen === 'SignUp') {
@@ -209,6 +212,7 @@ function AuthFlow() {
       onNavigateToSignUp={() => setScreen('SignUp')}
       onNavigateToForgotPassword={() => setScreen('ForgotPassword')}
       onSignIn={signIn}
+      onContinueAsGuest={signInAsGuest}
     />
   );
 }
@@ -233,7 +237,8 @@ function AppContent() {
   const navigationRef = createNavigationContainerRef<RootStackParamList>();
   const appFadeAnim = useRef(new Animated.Value(0)).current;
 
-  const isAuthenticated = !!session && !session.user.is_anonymous;
+  // Misafir (anonim) oturum da uygulamaya girer; hesap açma önerisi ders akışında gelir.
+  const isAuthenticated = !!session;
 
   const handleSplashFinish = () => {
     setShowSplash(false);
@@ -257,6 +262,17 @@ function AppContent() {
     }
     let cancelled = false;
     const checkProfile = async () => {
+      // Misafir: form yok, doğrudan uygulamaya. Ad vb. hesap oluşturulunca sorulur.
+      if (session.user.is_anonymous) {
+        setNeedsOnboarding(false);
+        try {
+          const tourSeen = await AsyncStorage.getItem(TOUR_SEEN_KEY);
+          if (!cancelled && !tourSeen) setShowTour(true);
+        } catch {
+          // tur bilgisi okunamazsa turu atla
+        }
+        return;
+      }
       try {
         const { data } = await supabase
           .from('profiles')
@@ -326,9 +342,11 @@ function AppContent() {
         <StatusBar style="light" />
         <OnboardingScreen
           userId={session!.user.id}
-          onComplete={() => {
+          onComplete={async () => {
             setNeedsOnboarding(false);
-            setShowTour(true);
+            // Misafirken turu görmüş olabilir; tekrar gösterme.
+            const tourSeen = await AsyncStorage.getItem(TOUR_SEEN_KEY).catch(() => null);
+            if (!tourSeen) setShowTour(true);
           }}
         />
       </>
@@ -386,6 +404,14 @@ function AppContent() {
             component={LevelExamScreen}
             options={{
               headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="CreateAccount"
+            component={CreateAccountScreen}
+            options={{
+              headerShown: false,
+              presentation: 'modal',
             }}
           />
         </Stack.Navigator>

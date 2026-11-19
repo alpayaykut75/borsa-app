@@ -23,7 +23,8 @@ import type { HomeStackParamList, RootStackParamList } from '../App';
 import LessonPathItem from '../components/LessonPathItem';
 import { useSfx } from '../src/hooks/useSfx';
 import { usePremium } from '../src/contexts/PremiumContext';
-import { isSixthLessonPremiumGate } from '../src/constants/premium';
+import { FREE_LESSONS_IN_FIRST_UNIT, isSixthLessonPremiumGate } from '../src/constants/premium';
+import { useAuth } from '../src/contexts/AuthContext';
 import { UNLOCK_ALL_FOR_TEST } from '../src/constants/devFlags';
 import { getLevelImage } from '../src/constants/levelImages';
 import { isBonusUnit, isCheckpointExamLesson } from '../src/constants/curriculum';
@@ -86,6 +87,7 @@ export default function UnitDetailScreen({ route, navigation }: Props) {
   const [levelExamTitle, setLevelExamTitle] = useState('Seviye Geçiş Sınavı');
   const { playSound } = useSfx();
   const { isPremium, firstUnitId, openPaywall } = usePremium();
+  const { isAnonymous } = useAuth();
 
   const getCoreLessonIndex = (lessonIndex: number) =>
     lessons
@@ -97,6 +99,18 @@ export default function UnitDetailScreen({ route, navigation }: Props) {
     !isCheckpointExamLesson(lesson) &&
     isSixthLessonPremiumGate(unitId, getCoreLessonIndex(lessonIndex), firstUnitId) &&
     !isPremium;
+
+  /** Misafir kullanıcı ilk 5 dersten sonrasına geçmeden önce hesap oluşturmalı. */
+  const isGuestGateLesson = (lessonIndex: number, lesson: Lesson) =>
+    isAnonymous &&
+    !UNLOCK_ALL_FOR_TEST &&
+    !isCheckpointExamLesson(lesson) &&
+    !completedLessonIds.has(lesson.id) &&
+    getCoreLessonIndex(lessonIndex) >= FREE_LESSONS_IN_FIRST_UNIT;
+
+  const openGuestGate = () => {
+    navigation.navigate('CreateAccount', { required: true });
+  };
 
   const handleBackPress = () => {
     /** goBack() bazen Root’taki Lesson ekranına düşüyor; seviye listesine her zaman Home ile git */
@@ -215,6 +229,11 @@ export default function UnitDetailScreen({ route, navigation }: Props) {
       return;
     }
 
+    if (isGuestGateLesson(index, lesson)) {
+      openGuestGate();
+      return;
+    }
+
     if (isPremiumGateLesson(index, lesson)) {
       openPaywall({
         title: 'Premium ile devam et',
@@ -254,6 +273,10 @@ export default function UnitDetailScreen({ route, navigation }: Props) {
     }
     if (!UNLOCK_ALL_FOR_TEST && !areAllLessonsCompleted) {
       Alert.alert('Sınav kilitli', 'Önce bu seviyedeki tüm dersleri tamamla, Ortak.');
+      return;
+    }
+    if (isAnonymous && !UNLOCK_ALL_FOR_TEST) {
+      openGuestGate();
       return;
     }
     playSound('correct', { volume: 0.22, maxDurationMs: 200 });

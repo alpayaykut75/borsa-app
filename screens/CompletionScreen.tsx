@@ -1,4 +1,5 @@
-import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   Animated,
   Image,
@@ -14,6 +15,10 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../App';
 import { useSfx } from '../src/hooks/useSfx';
 import { usePremium } from '../src/contexts/PremiumContext';
+import { useAuth } from '../src/contexts/AuthContext';
+
+/** Misafire "hesap oluştur" önerisi her misafir için yalnızca bir kez gösterilir. */
+const guestNudgeKey = (userId: string) => `moono.guestAccountNudgeShown.${userId}`;
 import { getLevelImage } from '../src/constants/levelImages';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Completion'>;
@@ -55,6 +60,12 @@ export default function CompletionScreen({ route, navigation }: Props) {
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const { playSound } = useSfx();
   const { openPaywall } = usePremium();
+  const { isAnonymous, session } = useAuth();
+  const guestUserId = session?.user?.id;
+  const [guestNudge, setGuestNudge] = useState(false);
+  // Misafir 5. dersi bitirdi: premium'dan önce hesap zorunlu.
+  const guestMustCreateAccount = isAnonymous && showFreeTierEndPaywall;
+  const showGuestNudge = isAnonymous && !showFreeTierEndPaywall && guestNudge;
   const levelCharacterImage = getLevelCharacterImage(unitTitle, unitId);
   const confettiPieces = useMemo<ConfettiPiece[]>(
     () =>
@@ -77,6 +88,26 @@ export default function CompletionScreen({ route, navigation }: Props) {
       headerShown: false,
     });
   }, [navigation]);
+
+  useEffect(() => {
+    if (!isAnonymous || showFreeTierEndPaywall || !guestUserId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const key = guestNudgeKey(guestUserId);
+        const shown = await AsyncStorage.getItem(key);
+        if (cancelled || shown) return;
+        await AsyncStorage.setItem(key, '1');
+        if (!cancelled) setGuestNudge(true);
+      } catch {
+        // depolama okunamazsa öneriyi atla
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     playSound('complete');
@@ -200,13 +231,38 @@ export default function CompletionScreen({ route, navigation }: Props) {
           <Text style={styles.title}>Görev Tamamlandı!</Text>
 
           <Text style={styles.subtitle}>
-            {showFreeTierEndPaywall
+            {guestMustCreateAccount
+              ? 'Harika Ortak, ilk 5 dersi tamamladın! Devam etmek için önce ücretsiz hesabını oluştur. Şimdiye kadarki ilerlemen aynen korunur.'
+              : showGuestNudge
+              ? 'Harika, ilk dersin tamam! İlerlemen kaybolmasın diye istersen şimdi ücretsiz hesabını oluşturabilirsin.'
+              : showFreeTierEndPaywall
               ? 'Harika Ortak! Ücretsiz yolculuk buraya kadardı — ilk 5 dersi tamamladın. 6. dersten devam etmek için Premium’a geçmen gerekiyor.'
               : 'Harika! Bir adım daha tamam. Kilidi açtın, devam!'}
           </Text>
         </View>
 
-        {showFreeTierEndPaywall ? (
+        {guestMustCreateAccount || showGuestNudge ? (
+          <View style={styles.buttonGroup}>
+            <TouchableOpacity
+              style={styles.button}
+              onPress={() =>
+                navigation.navigate('CreateAccount', { required: guestMustCreateAccount })
+              }
+              activeOpacity={0.9}
+            >
+              <Text style={styles.buttonText}>Hesap Oluştur</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.secondaryButton}
+              onPress={handleContinue}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.secondaryButtonText}>
+                {guestMustCreateAccount ? 'Şimdilik Dön' : 'Şimdi Değil'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        ) : showFreeTierEndPaywall ? (
           <View style={styles.buttonGroup}>
             <TouchableOpacity
               style={styles.button}
