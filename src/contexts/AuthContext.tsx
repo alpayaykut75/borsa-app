@@ -24,7 +24,7 @@ type AuthContextType = AuthState & {
   upgradeGuest: (
     email: string,
     password: string,
-  ) => Promise<{ error: string | null; needsEmailConfirmation?: boolean }>;
+  ) => Promise<{ error: string | null; needsEmailConfirmation?: boolean; userId?: string }>;
   /** Hesabı ve kullanıcı verilerini kalıcı olarak siler, sonra oturumu kapatır. */
   deleteAccount: () => Promise<{ error: string | null }>;
 };
@@ -103,7 +103,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const upgradeGuest = async (
     email: string,
     password: string,
-  ): Promise<{ error: string | null; needsEmailConfirmation?: boolean }> => {
+  ): Promise<{ error: string | null; needsEmailConfirmation?: boolean; userId?: string }> => {
     // 1) E-postayı bağla. "Confirm email" kapalıyken kullanıcı hemen kalıcı olur.
     const { data, error } = await supabase.auth.updateUser(
       { email },
@@ -135,7 +135,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       };
     }
     await supabase.auth.refreshSession();
-    return { error: null };
+    return { error: null, userId: user.id };
   };
 
   const signOut = async () => {

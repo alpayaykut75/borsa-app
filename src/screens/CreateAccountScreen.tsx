@@ -19,6 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import type { RootStackParamList } from '../../App';
 import { palette } from '../constants/theme';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../../lib/supabase';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CreateAccount'>;
 
@@ -77,12 +78,18 @@ export default function CreateAccountScreen({ route, navigation }: Props) {
       return;
     }
 
-    // Hesap kalıcı oldu. Profilde ad yoksa uygulama şimdi kısa tanışma formunu açar.
+    // Hesap kalıcı oldu. Profilde ad yoksa uygulama kendiliğinden tanışma formunu açar;
+    // o durumda ayrıca uyarı göstermiyoruz. Ad zaten varsa kısa bir onay yeterli.
+    const userId = result.userId;
+    let hasName = false;
+    if (userId) {
+      const { data } = await supabase.from('profiles').select('first_name').eq('id', userId).maybeSingle();
+      hasName = !!data?.first_name;
+    }
     close();
-    Alert.alert(
-      'Hesabın hazır, Ortak!',
-      'İlerlemen hesabına kaydedildi, kaldığın yerden devam edebilirsin.',
-    );
+    if (hasName) {
+      Alert.alert('Hesabın hazır, Ortak!', 'İlerlemen hesabına kaydedildi.');
+    }
   };
 
   const handleHaveAccount = () => {
