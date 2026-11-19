@@ -520,7 +520,8 @@ export default function LessonScreen({ route, navigation }: Props) {
 
   const canContinue = useMemo(() => {
     if (!currentStep) return false;
-    if (currentStep.type === 'quiz') return quizState.isCorrect === true;
+    // Tek hak: cevap verildikten sonra (doğru ya da yanlış) devam edilebilir.
+    if (currentStep.type === 'quiz') return quizState.selectedOptionId != null;
     if (currentStep.type === 'flashcard') return Boolean(flippedState.current[currentStep.id]);
     if (currentStep.type === 'mission') return missionState[currentStep.id]?.done === true;
     if (currentStep.type === 'final_quiz') {
@@ -539,7 +540,8 @@ export default function LessonScreen({ route, navigation }: Props) {
   }, [currentStep, quizState, finalQuizState, flashcardFlipTick, missionState]);
 
   const handleOptionSelect = (selectedOptionId: string, correctOptionId?: string) => {
-    if (quizState.isCorrect) return;
+    // Tek hak: ilk seçimden sonra cevap değiştirilemez.
+    if (quizState.selectedOptionId != null) return;
     if (correctOptionId == null) {
       setQuizState({ selectedOptionId, isCorrect: false, feedback: 'Bu soru yapılandırılmamış.' });
       // Error SFX for misconfigured question
@@ -926,9 +928,34 @@ export default function LessonScreen({ route, navigation }: Props) {
         </View>
         <Text style={styles.reviewTitle}>Yanlışlarını tekrar edelim</Text>
         <Text style={styles.reviewText}>
-          Ortak, alıştırmalarda {count} soruda ilk seferde takıldın. Bu çok normal; şimdi onlara bir kez
-          daha bakalım. Sonra özet ve final seni bekliyor.
+          Ortak, alıştırmalarda {count} soruyu kaçırdın. Bu çok normal; şimdi onlara bir kez daha
+          bakalım. Sonra özet ve final seni bekliyor.
         </Text>
+      </View>
+    );
+  };
+
+  /** Cevap verildikten sonra çıkan kısa not: doğruysa onay, yanlışsa doğru şık + varsa açıklama. */
+  const renderQuizFeedback = (
+    options: QuizOption[],
+    correctOptionId: string | undefined,
+    explanation?: string,
+  ) => {
+    if (quizState.selectedOptionId == null || correctOptionId == null) return null;
+    const correctText = options.find((o) => o.id === correctOptionId)?.text ?? '';
+    const ok = quizState.isCorrect === true;
+    return (
+      <View style={[styles.quizFeedback, ok ? styles.quizFeedbackOk : styles.quizFeedbackWrong]}>
+        <View style={styles.quizFeedbackHead}>
+          <Ionicons
+            name={ok ? 'checkmark-circle' : 'information-circle'}
+            size={20}
+            color={ok ? '#16A34A' : palette.accent}
+          />
+          <Text style={styles.quizFeedbackTitle}>{ok ? 'Doğru, ortak!' : 'Doğrusu bu, ortak:'}</Text>
+        </View>
+        {!ok && !!correctText && <Text style={styles.quizFeedbackAnswer}>{correctText}</Text>}
+        {!!explanation && <Text style={styles.quizFeedbackText}>{explanation}</Text>}
       </View>
     );
   };
@@ -996,7 +1023,8 @@ export default function LessonScreen({ route, navigation }: Props) {
           <View style={styles.sentenceOptionsGrid}>
             {options.map((option, index) => {
               const selected = quizState.selectedOptionId === option.id;
-              const isCorrectOption = quizState.isCorrect && selected;
+              const answered = quizState.selectedOptionId != null;
+              const isCorrectOption = answered && option.id === correctOptionId;
               const isWrongOption = quizState.isCorrect === false && selected;
 
               return (
@@ -1010,13 +1038,14 @@ export default function LessonScreen({ route, navigation }: Props) {
                   ]}
                   activeOpacity={0.85}
                   onPress={() => handleOptionSelect(option.id, correctOptionId)}
-                  disabled={quizState.isCorrect === true}
+                  disabled={quizState.selectedOptionId != null}
                 >
                   <Text style={styles.sentenceOptionChipText}>{option.text}</Text>
                 </TouchableOpacity>
               );
             })}
           </View>
+          {renderQuizFeedback(options, correctOptionId, metadata.explanation)}
         </View>
       );
     }
@@ -1028,7 +1057,8 @@ export default function LessonScreen({ route, navigation }: Props) {
         <View style={styles.optionsWrapper}>
           {options.map((option, index) => {
             const selected = quizState.selectedOptionId === option.id;
-            const isCorrectOption = quizState.isCorrect && selected;
+            const answered = quizState.selectedOptionId != null;
+            const isCorrectOption = answered && option.id === correctOptionId;
             const isWrongOption = quizState.isCorrect === false && selected;
 
             return (
@@ -1042,7 +1072,7 @@ export default function LessonScreen({ route, navigation }: Props) {
                 ]}
                 activeOpacity={0.85}
                 onPress={() => handleOptionSelect(option.id, correctOptionId)}
-                disabled={quizState.isCorrect === true}
+                disabled={quizState.selectedOptionId != null}
               >
                 <Text style={[styles.optionText, (isCorrectOption || isWrongOption) && styles.optionTextState]}>
                   {option.text}
@@ -1051,6 +1081,7 @@ export default function LessonScreen({ route, navigation }: Props) {
             );
           })}
         </View>
+        {renderQuizFeedback(options, correctOptionId, metadata.explanation)}
       </View>
     );
   };
@@ -1857,6 +1888,19 @@ const styles = StyleSheet.create({
     borderColor: palette.border,
     marginBottom: 24,
   },
+  quizFeedback: {
+    marginTop: 18,
+    borderRadius: 16,
+    borderWidth: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+  },
+  quizFeedbackOk: { borderColor: '#16A34A', backgroundColor: 'rgba(22, 163, 74, 0.12)' },
+  quizFeedbackWrong: { borderColor: palette.accent, backgroundColor: 'rgba(0, 196, 204, 0.10)' },
+  quizFeedbackHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  quizFeedbackTitle: { fontSize: 15, fontWeight: '700', color: palette.text },
+  quizFeedbackAnswer: { fontSize: 16, fontWeight: '700', color: palette.text, marginTop: 6 },
+  quizFeedbackText: { fontSize: 14, lineHeight: 20, color: '#C8CCCC', marginTop: 6 },
   reviewIconWrap: {
     width: 60,
     height: 60,
