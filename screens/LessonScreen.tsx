@@ -561,8 +561,10 @@ export default function LessonScreen({ route, navigation }: Props) {
     : steps.length > 0
       ? `Adım ${Math.min(baseStepPosition, baseStepCount)} / ${baseStepCount}`
       : 'Adım 0 / 0';
-  const headerSubtitleText =
-    sectionDoneScreen != null
+  // 4 bölümlü derste ilerleme çubukta görünür; başlık altında ayrıca yazı yok.
+  const headerSubtitleText = sectioned
+    ? ''
+    : sectionDoneScreen != null
       ? `Bölüm ${sectionDoneScreen + 1}/${SECTION_COUNT} tamamlandı`
       : currentStep?.type === 'final_quiz' && finalQuizState.isSubmitted
       ? 'Bölüm Sonu Testi • Sonuç'
@@ -974,7 +976,6 @@ export default function LessonScreen({ route, navigation }: Props) {
 
   const renderReadStep = (step: LessonStep) => {
     const metadata = step.metadata || {};
-    const label = 'Okuma';
     // İçerik öncelikle step.content'ten, yoksa metadata'dan
     const contentText = step.content || metadata.text || metadata.body || '';
     const markdown = contentText.replace(/\\n/g, '\n');
@@ -983,7 +984,6 @@ export default function LessonScreen({ route, navigation }: Props) {
 
     return (
       <View style={styles.card}>
-        <Text style={styles.stepTag}>{label}</Text>
         {renderStepTitle(step.title)}
         {!!emoji && (
           <View style={styles.emojiContainer}>
@@ -1038,6 +1038,7 @@ export default function LessonScreen({ route, navigation }: Props) {
 
   const renderQuizStep = (step: LessonStep) => {
     const metadata = step.metadata || {};
+    const isReview = metadata.review_of != null;
     // Question comes from metadata.question
     const question = metadata.question || step.content || '';
     const rawOptions = metadata.options || [];
@@ -1067,7 +1068,8 @@ export default function LessonScreen({ route, navigation }: Props) {
     if (isSentenceCompletion) {
       return (
         <View style={styles.card}>
-          <Text style={styles.stepTag}>Cümle Tamamlama</Text>
+          {isReview ? <Text style={styles.stepTag}>Tekrar</Text> : null}
+          <Text style={styles.stepHint}>Boşluğu doldur</Text>
           {!!question && (
             cleanedQuestion.includes('____') && quizState.selectedOptionId ? (
               (() => {
@@ -1128,7 +1130,7 @@ export default function LessonScreen({ route, navigation }: Props) {
 
     return (
       <View style={styles.card}>
-        <Text style={styles.stepTag}>Alıştırma</Text>
+        {isReview ? <Text style={styles.stepTag}>Tekrar</Text> : null}
         {!!question && <Text style={styles.stepTitle}>{question}</Text>}
         <View style={styles.optionsWrapper}>
           {options.map((option, index) => {
@@ -1176,7 +1178,6 @@ export default function LessonScreen({ route, navigation }: Props) {
 
     return (
       <View style={styles.flipCardContainer}>
-        <Text style={styles.stepTag}>Kelime Kartı</Text>
         <TouchableOpacity activeOpacity={0.95} onPress={() => handleFlip(step.id)}>
           <View style={styles.flipCardWrapper}>
             <Animated.View
@@ -1273,7 +1274,6 @@ export default function LessonScreen({ route, navigation }: Props) {
     if (videoUrl) {
       return (
         <View style={styles.videoStepCard}>
-          <Text style={styles.stepTag}>Özet</Text>
           <LessonVideoSummary
             key={step.id}
             uri={videoUrl}
@@ -1332,7 +1332,6 @@ export default function LessonScreen({ route, navigation }: Props) {
 
     return (
       <View style={[styles.audioCard, hasTranscript && styles.audioCardWithCaption]}>
-        <Text style={styles.stepTag}>Dinleme</Text>
         <View style={[styles.audioIconContainer, hasTranscript && styles.audioIconContainerCompact]}>
           <Animated.View style={{ transform: [{ scale: pulseAnimation }] }}>
             <Ionicons name="headset" size={hasTranscript ? 56 : 80} color="#00C4CC" />
@@ -1579,7 +1578,6 @@ export default function LessonScreen({ route, navigation }: Props) {
 
     return (
       <View style={styles.card}>
-        <Text style={styles.stepTag}>Bölüm Sonu Testi</Text>
         <Text style={styles.headerSubtitle}>
           Soru {finalQuizState.currentQuestionIndex + 1} / {questions.length}
         </Text>
@@ -1928,7 +1926,7 @@ export default function LessonScreen({ route, navigation }: Props) {
             >
               {lessonTitle || 'Ders'}
             </Text>
-            <Text style={styles.headerSubtitle}>{headerSubtitleText}</Text>
+            {!!headerSubtitleText && <Text style={styles.headerSubtitle}>{headerSubtitleText}</Text>}
           </View>
           <TouchableOpacity
             style={styles.closeLessonButton}
@@ -2130,6 +2128,12 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     color: palette.muted,
     textAlign: 'center',
+  },
+  stepHint: {
+    fontSize: 13,
+    color: palette.muted,
+    marginBottom: 10,
+    fontWeight: '600',
   },
   stepTag: {
     fontSize: 13,
