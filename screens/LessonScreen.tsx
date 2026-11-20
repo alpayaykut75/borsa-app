@@ -40,6 +40,15 @@ import { isCheckpointExamLesson } from '../src/constants/curriculum';
 import LessonVideoSummary from '../components/LessonVideoSummary';
 import MissionStep, { type MissionMetadata } from '../components/MissionStep';
 import { MISSION_PREVIEW } from '../src/content/missionPreview';
+import { useAuth } from '../src/contexts/AuthContext';
+import {
+  LESSON_SECTIONS,
+  SECTION_COUNT,
+  clearSectionsDone,
+  getSectionsDone,
+  sectionOfStep,
+  setSectionsDone,
+} from '../src/services/lessonSections';
 
 const palette = {
   background: '#000000',
@@ -112,6 +121,16 @@ type StepMetadata = {
   review_of?: number; // asıl quiz adımının id'si
   review_count?: number; // review_intro: kaç soru tekrar edilecek
 } | null;
+
+/** 20 adımlı normal ders mi? (Ara değerlendirme gibi kısa sınav dersleri bölümlere ayrılmaz.) */
+function isSectionedLesson(list: { type: string; order_index: number; metadata: { review_of?: number } | null }[]): boolean {
+  const base = list.filter((st) => st.type !== 'review_intro' && st.metadata?.review_of == null);
+  return (
+    base.length >= 16 &&
+    base.some((st) => st.type === 'final_quiz') &&
+    base.some((st) => st.order_index >= 19)
+  );
+}
 
 type LessonStep = {
   id: number;
@@ -246,6 +265,11 @@ export default function LessonScreen({ route, navigation }: Props) {
   /** İlk cevabı verilmiş quiz adımları (ilk deneme takibi için). */
   const answeredQuizIds = useRef<Set<number>>(new Set());
   const [reviewInserted, setReviewInserted] = useState(false);
+  const { session } = useAuth();
+  const userId = session?.user?.id;
+  /** Bölüm sonu ekranı: bitirilen bölümün sırası (0–2) ya da null. */
+  const [sectionDoneScreen, setSectionDoneScreen] = useState<number | null>(null);
+  const sectionStartedAt = useRef<number>(Date.now());
   const [finalQuizState, setFinalQuizState] = useState<FinalQuizState>({
     hasStarted: false,
     currentQuestionIndex: 0,
@@ -363,12 +387,24 @@ export default function LessonScreen({ route, navigation }: Props) {
             : [...finalSteps, missionStep];
       }
 
+      // Kaldığı yerden devam: daha önce bitirilmiş bölümler varsa sıradaki bölümün ilk adımından başla.
+      let startIndex = 0;
+      if (isSectionedLesson(finalSteps)) {
+        const doneSections = await getSectionsDone(userId, lessonId);
+        if (doneSections > 0) {
+          const firstOfNext = finalSteps.findIndex((st) => sectionOfStep(st.order_index) >= doneSections);
+          if (firstOfNext > 0) startIndex = firstOfNext;
+        }
+      }
+
       setSteps(finalSteps);
       setMissionState({});
       setFirstTryWrongIds([]);
       answeredQuizIds.current = new Set();
       setReviewInserted(false);
-      setCurrentIndex(0);
+      setSectionDoneScreen(null);
+      sectionStartedAt.current = Date.now();
+      setCurrentIndex(startIndex);
       setQuizState({});
       setFinalQuizState({
         hasStarted: false,
@@ -390,7 +426,8 @@ export default function LessonScreen({ route, navigation }: Props) {
       flippedState.current = {};
     }
     setLoading(false);
-  }, [lessonId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lessonId, userId]);
 
   // Audio mode setup: iOS sessiz modda bile çalması için
   useEffect(() => {
@@ -466,6 +503,15 @@ export default function LessonScreen({ route, navigation }: Props) {
   }, [navigation]);
 
   const currentStep = steps[currentIndex];
+  const sectioned = isSectionedLesson(steps);
+  const stepSection = (st?: LessonStep) =>
+    st ? sectionOfStep(st.order_index, st.type === 'review_intro' || st.metadata?.review_of != null) : 0;
+  const currentSection = stepSection(currentStep);
+  const sectionStepIndexes = steps
+    .map((st, i) => ({ st, i }))
+    .filter(({ st }) => stepSection(st) === currentSection);
+  const sectionPos = sectionStepIndexes.findIndex(({ i }) => i === currentIndex) + 1;
+  const sectionTotal = sectionStepIndexes.length;
   const audioCaptionData = useMemo(() => {
     if (currentStep?.type !== 'audio') return null;
     const metadata = (currentStep.metadata || {}) as Record<string, unknown>;
@@ -506,7 +552,9 @@ export default function LessonScreen({ route, navigation }: Props) {
   const baseStepCount = steps.filter((st) => !isReviewStep(st)).length;
   const baseStepPosition = steps.slice(0, currentIndex + 1).filter((st) => !isReviewStep(st)).length;
   const reviewQuestionSteps = steps.filter((st) => st.metadata?.review_of != null);
-  const stepHeaderText = isReviewStep(currentStep)
+  const stepHeaderText = sectioned && !isReviewStep(currentStep)
+    ? `Bölüm ${currentSection + 1}/${SECTION_COUNT} · ${LESSON_SECTIONS[currentSection].name} · adım ${sectionPos}/${sectionTotal}`
+    : isReviewStep(currentStep)
     ? currentStep?.type === 'review_intro'
       ? 'Tekrar'
       : `Tekrar ${reviewQuestionSteps.findIndex((st) => st.id === currentStep?.id) + 1} / ${reviewQuestionSteps.length}`
@@ -514,7 +562,9 @@ export default function LessonScreen({ route, navigation }: Props) {
       ? `Adım ${Math.min(baseStepPosition, baseStepCount)} / ${baseStepCount}`
       : 'Adım 0 / 0';
   const headerSubtitleText =
-    currentStep?.type === 'final_quiz' && finalQuizState.isSubmitted
+    sectionDoneScreen != null
+      ? `Bölüm ${sectionDoneScreen + 1}/${SECTION_COUNT} tamamlandı`
+      : currentStep?.type === 'final_quiz' && finalQuizState.isSubmitted
       ? 'Bölüm Sonu Testi • Sonuç'
       : stepHeaderText;
 
@@ -595,6 +645,7 @@ export default function LessonScreen({ route, navigation }: Props) {
 
   const completeLessonAndNavigate = useCallback(async () => {
     setIsCompleting(true);
+    clearSectionsDone(userId, lessonId);
 
     const {
       data: { user },
@@ -682,7 +733,7 @@ export default function LessonScreen({ route, navigation }: Props) {
         showFreeTierEndPaywall: false,
       });
     }
-  }, [lessonId, unitId, unitTitle, entryStatus, navigation, isPremium, firstUnitId]);
+  }, [lessonId, unitId, unitTitle, entryStatus, navigation, isPremium, firstUnitId, userId]);
 
   /**
    * Yanlışları tekrar: özet (audio) ya da final adımına geçmeden hemen önce,
@@ -718,7 +769,28 @@ export default function LessonScreen({ route, navigation }: Props) {
   };
 
   const goToNextRegularStep = async () => {
-    insertReviewIfNeeded();
+    const reviewAdded = insertReviewIfNeeded();
+    // Bölüm sınırı: bölümün son adımı bitince bölüm sonu ekranını göster (son bölüm hariç).
+    if (!reviewAdded && sectioned && sectionDoneScreen == null && currentIndex < steps.length - 1) {
+      const cur = stepSection(currentStep);
+      const next = stepSection(steps[currentIndex + 1]);
+      if (next > cur) {
+        playSound('complete');
+        setSectionDoneScreen(cur);
+        setSectionsDone(userId, lessonId, cur + 1);
+        return;
+      }
+    }
+    await advanceStep();
+  };
+
+  const continueToNextSection = () => {
+    setSectionDoneScreen(null);
+    sectionStartedAt.current = Date.now();
+    advanceStep();
+  };
+
+  const advanceStep = async () => {
     if (currentIndex === steps.length - 1) {
       playSound('complete');
       await completeLessonAndNavigate();
@@ -836,6 +908,10 @@ export default function LessonScreen({ route, navigation }: Props) {
   };
 
   const handleLessonBackPress = () => {
+    if (sectionDoneScreen != null) {
+      setSectionDoneScreen(null);
+      return;
+    }
     if (currentIndex > 0) {
       setCurrentIndex((prev) => prev - 1);
       setQuizState({});
@@ -1654,6 +1730,78 @@ export default function LessonScreen({ route, navigation }: Props) {
     );
   };
 
+  /** 4 parçalı ilerleme çubuğu + bölüm adları. activeFill: aktif bölümün dolu oranı (0–1). */
+  const renderSectionBar = (active: number, activeFill: number) => (
+    <View style={styles.sectionBarWrap}>
+      <View style={styles.sectionBarRow}>
+        {LESSON_SECTIONS.map((sec, i) => {
+          const fill = i < active ? 1 : i > active ? 0 : Math.max(0.04, Math.min(1, activeFill));
+          return (
+            <View key={sec.name} style={styles.sectionSeg}>
+              <View style={[styles.sectionSegFill, { width: `${fill * 100}%` }]} />
+            </View>
+          );
+        })}
+      </View>
+      <View style={styles.sectionBarRow}>
+        {LESSON_SECTIONS.map((sec, i) => (
+          <Text
+            key={sec.name}
+            style={[
+              styles.sectionLabel,
+              i === active ? styles.sectionLabelActive : i < active ? styles.sectionLabelDone : null,
+            ]}
+          >
+            {sec.name}
+          </Text>
+        ))}
+      </View>
+    </View>
+  );
+
+  const renderSectionDoneScreen = (done: number) => {
+    const sec = LESSON_SECTIONS[done];
+    const next = LESSON_SECTIONS[done + 1];
+    const minutes = Math.max(1, Math.round((Date.now() - sectionStartedAt.current) / 60000));
+    const sectionQuizIds = steps
+      .filter((st) => st.type === 'quiz' && st.metadata?.review_of == null && stepSection(st) === done)
+      .map((st) => st.id);
+    const answered = sectionQuizIds.filter((id) => answeredQuizIds.current.has(id));
+    const correct = answered.filter((id) => !firstTryWrongIds.includes(id)).length;
+    const stats = [sec.longName, `${minutes} dk`];
+    if (answered.length > 0) stats.push(`${answered.length} sorudan ${correct} doğru`);
+
+    return (
+      <>
+        {renderSectionBar(done + 1, 0)}
+        <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.sectionDoneContent}>
+          <View style={styles.sectionDoneRing}>
+            <Ionicons name="checkmark" size={56} color={palette.accent} />
+          </View>
+          <Text style={styles.sectionDoneTitle}>Bölüm {done + 1} tamam, ortak</Text>
+          <Text style={styles.sectionDoneStats}>{stats.join(' · ')}</Text>
+          {!!next && (
+            <View style={styles.sectionNextCard}>
+              <Text style={styles.sectionNextLabel}>SIRADAKİ</Text>
+              <Text style={styles.sectionNextTitle}>
+                Bölüm {done + 2} · {next.longName}
+              </Text>
+              <Text style={styles.sectionNextSub}>
+                {next.sub} · {next.time}
+              </Text>
+            </View>
+          )}
+        </ScrollView>
+        <TouchableOpacity style={[styles.primaryButton, styles.sectionPrimaryButton]} onPress={continueToNextSection}>
+          <Text style={styles.primaryButtonText}>Sıradaki bölüme geç</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.sectionLaterButton} onPress={handleExitToUnitList} activeOpacity={0.8}>
+          <Text style={styles.sectionLaterText}>Şimdilik bu kadar</Text>
+        </TouchableOpacity>
+      </>
+    );
+  };
+
   const renderBody = () => {
     const currentFinalQuizQuestions =
       currentStep?.type === 'final_quiz' && Array.isArray((currentStep.metadata || {}).questions)
@@ -1704,11 +1852,19 @@ export default function LessonScreen({ route, navigation }: Props) {
       );
     }
 
+    if (sectionDoneScreen != null) {
+      return renderSectionDoneScreen(sectionDoneScreen);
+    }
+
     return (
       <>
-        <View style={styles.progressBarContainer}>
-          <View style={[styles.progressBarFill, { width: `${progress * 100}%` }]} />
-        </View>
+        {sectioned ? (
+          renderSectionBar(currentSection, sectionTotal > 0 ? (sectionPos - 1) / sectionTotal : 0)
+        ) : (
+          <View style={styles.progressBarContainer}>
+            <View style={[styles.progressBarFill, { width: `${progress * 100}%` }]} />
+          </View>
+        )}
         <ScrollView
           key={currentStep?.id ?? currentIndex}
           ref={stepScrollRef}
@@ -1859,6 +2015,55 @@ const styles = StyleSheet.create({
     marginTop: 12,
     color: palette.muted,
   },
+  sectionBarWrap: { marginBottom: 16 },
+  sectionBarRow: { flexDirection: 'row', gap: 6 },
+  sectionSeg: { flex: 1, height: 6, borderRadius: 3, backgroundColor: '#1C1F1F', overflow: 'hidden' },
+  sectionSegFill: { height: 6, borderRadius: 3, backgroundColor: palette.accent },
+  sectionLabel: {
+    flex: 1,
+    marginTop: 6,
+    fontSize: 11,
+    fontWeight: '700',
+    textAlign: 'center',
+    color: '#5E6363',
+  },
+  sectionLabelActive: { color: palette.accent },
+  sectionLabelDone: { color: '#A3A8A8' },
+  sectionDoneContent: { alignItems: 'center', paddingTop: 32, paddingBottom: 24 },
+  sectionDoneRing: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    borderWidth: 10,
+    borderColor: palette.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sectionDoneTitle: { fontSize: 24, fontWeight: '800', color: palette.text, marginTop: 20, textAlign: 'center' },
+  sectionDoneStats: { fontSize: 15, color: '#A3A8A8', marginTop: 6, textAlign: 'center' },
+  sectionNextCard: {
+    alignSelf: 'stretch',
+    marginTop: 26,
+    padding: 14,
+    borderRadius: 16,
+    backgroundColor: '#141616',
+    borderWidth: 1,
+    borderColor: '#2C3030',
+  },
+  sectionNextLabel: { fontSize: 12, fontWeight: '700', letterSpacing: 1.2, color: palette.muted },
+  sectionNextTitle: { fontSize: 17, fontWeight: '700', color: palette.text, marginTop: 4 },
+  sectionNextSub: { fontSize: 13, color: palette.muted, marginTop: 2 },
+  sectionPrimaryButton: { marginBottom: 10 },
+  sectionLaterButton: {
+    height: 52,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#2C3030',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
+  },
+  sectionLaterText: { color: palette.text, fontSize: 16, fontWeight: '700' },
   progressBarContainer: {
     height: 6,
     borderRadius: 999,

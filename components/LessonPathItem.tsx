@@ -1,6 +1,7 @@
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 // @ts-expect-error - @expo/vector-icons type declarations may be missing
 import { Ionicons } from '@expo/vector-icons';
+import { LESSON_SECTIONS, SECTION_COUNT } from '../src/services/lessonSections';
 
 const palette = {
   background: '#000000',
@@ -31,6 +32,8 @@ type LessonPathItemProps = {
   status: LessonPathStatus;
   onPress: (lesson: Lesson) => void;
   hideActiveBadge?: boolean;
+  /** 4 bölümlü ders: bitirilmiş bölüm sayısı. undefined ise bölüm göstergesi çizilmez (sınavlar). */
+  sectionsDone?: number;
 };
 
 export default function LessonPathItem({
@@ -40,7 +43,11 @@ export default function LessonPathItem({
   status,
   onPress,
   hideActiveBadge = false,
+  sectionsDone,
 }: LessonPathItemProps) {
+  const showSections = sectionsDone !== undefined;
+  const doneParts =
+    status === 'COMPLETED' ? SECTION_COUNT : status === 'ACTIVE' ? Math.min(sectionsDone ?? 0, SECTION_COUNT) : 0;
   const isLast = index === totalLessons - 1;
   const isProgressLocked = status === 'LOCKED';
   const isPremiumLocked = status === 'PREMIUM';
@@ -155,6 +162,46 @@ export default function LessonPathItem({
               >
                 {lesson.description}
               </Text>
+            )}
+            {showSections && (
+              <View style={styles.sectionMini}>
+                <View style={styles.sectionMiniBar}>
+                  {LESSON_SECTIONS.map((sec, i) => (
+                    <View key={sec.name} style={[styles.sectionMiniSeg, i < doneParts && styles.sectionMiniSegDone]} />
+                  ))}
+                </View>
+                <Text style={[styles.sectionMiniCount, status === 'ACTIVE' && styles.sectionMiniCountActive]}>
+                  {doneParts}/{SECTION_COUNT}
+                </Text>
+              </View>
+            )}
+            {showSections && status === 'ACTIVE' && (
+              <View style={styles.partList}>
+                {LESSON_SECTIONS.map((sec, i) => {
+                  const done = i < doneParts;
+                  const current = i === doneParts;
+                  return (
+                    <View key={sec.name} style={[styles.partRow, current && styles.partRowCurrent]}>
+                      <View style={[styles.partIcon, (done || current) && styles.partIconOn]}>
+                        {done ? (
+                          <Ionicons name="checkmark" size={15} color="#000000" />
+                        ) : current ? (
+                          <Ionicons name="play" size={12} color="#000000" />
+                        ) : (
+                          <Text style={styles.partNum}>{i + 1}</Text>
+                        )}
+                      </View>
+                      <View style={styles.partText}>
+                        <Text style={[styles.partName, !done && !current && styles.partNameLocked]}>
+                          {sec.longName}
+                        </Text>
+                        <Text style={styles.partSub}>{sec.sub}</Text>
+                      </View>
+                      <Text style={styles.partTime}>{done ? 'bitti' : sec.time}</Text>
+                    </View>
+                  );
+                })}
+              </View>
             )}
           </View>
           {!isProgressLocked && (
@@ -322,6 +369,43 @@ const styles = StyleSheet.create({
   lessonDescriptionLocked: {
     color: '#7D7D7D',
   },
+  sectionMini: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 10 },
+  sectionMiniBar: { flex: 1, flexDirection: 'row', gap: 4 },
+  sectionMiniSeg: { flex: 1, height: 5, borderRadius: 3, backgroundColor: palette.border },
+  sectionMiniSegDone: { backgroundColor: palette.accent },
+  sectionMiniCount: { fontSize: 12, color: palette.muted, fontWeight: '600' },
+  sectionMiniCountActive: { color: palette.accent, fontWeight: '700' },
+  partList: { gap: 8, marginTop: 12 },
+  partRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    minHeight: 52,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 14,
+    backgroundColor: '#000000',
+    borderWidth: 1,
+    borderColor: '#2C3030',
+  },
+  partRowCurrent: { backgroundColor: 'rgba(0, 196, 204, 0.10)', borderColor: palette.accent },
+  partIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: palette.card,
+    borderWidth: 1,
+    borderColor: palette.border,
+  },
+  partIconOn: { backgroundColor: palette.accent, borderColor: palette.accent },
+  partNum: { fontSize: 13, fontWeight: '700', color: palette.muted },
+  partText: { flex: 1, minWidth: 0 },
+  partName: { fontSize: 15, fontWeight: '700', color: palette.text },
+  partNameLocked: { color: palette.muted },
+  partSub: { fontSize: 12, color: palette.muted, marginTop: 2 },
+  partTime: { fontSize: 12, color: palette.muted },
   arrowContainer: {
     width: 24,
     height: 24,

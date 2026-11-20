@@ -25,6 +25,7 @@ import { useSfx } from '../src/hooks/useSfx';
 import { usePremium } from '../src/contexts/PremiumContext';
 import { FREE_LESSONS_IN_FIRST_UNIT, isSixthLessonPremiumGate } from '../src/constants/premium';
 import { useAuth } from '../src/contexts/AuthContext';
+import { getSectionsDoneMap } from '../src/services/lessonSections';
 import { UNLOCK_ALL_FOR_TEST } from '../src/constants/devFlags';
 import { getLevelImage } from '../src/constants/levelImages';
 import { isBonusUnit, isCheckpointExamLesson } from '../src/constants/curriculum';
@@ -87,7 +88,8 @@ export default function UnitDetailScreen({ route, navigation }: Props) {
   const [levelExamTitle, setLevelExamTitle] = useState('Seviye Geçiş Sınavı');
   const { playSound } = useSfx();
   const { isPremium, firstUnitId, openPaywall } = usePremium();
-  const { isAnonymous } = useAuth();
+  const { isAnonymous, session } = useAuth();
+  const [sectionsDoneMap, setSectionsDoneMap] = useState<Record<number, number>>({});
 
   const getCoreLessonIndex = (lessonIndex: number) =>
     lessons
@@ -212,6 +214,14 @@ export default function UnitDetailScreen({ route, navigation }: Props) {
   }, []);
 
   // Sayfa her odaklandığında tamamlanan dersleri çek
+  // Yarım kalmış derslerin bölüm ilerlemesi (cihazda tutulur); ekran her açıldığında tazelenir.
+  useFocusEffect(
+    useCallback(() => {
+      const ids = lessons.filter((l) => !isCheckpointExamLesson(l)).map((l) => l.id);
+      getSectionsDoneMap(session?.user?.id, ids).then(setSectionsDoneMap);
+    }, [lessons, session?.user?.id]),
+  );
+
   useFocusEffect(
     useCallback(() => {
       fetchCompletedLessons();
@@ -372,6 +382,7 @@ export default function UnitDetailScreen({ route, navigation }: Props) {
         totalLessons={listItems.length}
         status={status}
         onPress={handleLessonPress}
+        sectionsDone={isCheckpointExamLesson(lesson) ? undefined : sectionsDoneMap[lesson.id] ?? 0}
       />
     );
   };
