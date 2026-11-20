@@ -1,6 +1,7 @@
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 // @ts-expect-error - @expo/vector-icons type declarations may be missing
 import { Ionicons } from '@expo/vector-icons';
+import { LESSON_SECTIONS, SECTION_COUNT } from '../src/services/lessonSections';
 
 const palette = {
   background: '#000000',
@@ -31,6 +32,8 @@ type LessonPathItemProps = {
   status: LessonPathStatus;
   onPress: (lesson: Lesson) => void;
   hideActiveBadge?: boolean;
+  /** 4 bölümlü ders: bitirilmiş bölüm sayısı. undefined ise bölüm göstergesi çizilmez (sınavlar). */
+  sectionsDone?: number;
 };
 
 export default function LessonPathItem({
@@ -40,7 +43,11 @@ export default function LessonPathItem({
   status,
   onPress,
   hideActiveBadge = false,
+  sectionsDone,
 }: LessonPathItemProps) {
+  const showSections = sectionsDone !== undefined;
+  const doneParts =
+    status === 'COMPLETED' ? SECTION_COUNT : status === 'ACTIVE' ? Math.min(sectionsDone ?? 0, SECTION_COUNT) : 0;
   const isLast = index === totalLessons - 1;
   const isProgressLocked = status === 'LOCKED';
   const isPremiumLocked = status === 'PREMIUM';
@@ -155,6 +162,44 @@ export default function LessonPathItem({
               >
                 {lesson.description}
               </Text>
+            )}
+            {showSections && (
+              <View style={styles.sectionMini}>
+                <View style={styles.sectionMiniBar}>
+                  {LESSON_SECTIONS.map((sec, i) => (
+                    <View key={sec.name} style={[styles.sectionMiniSeg, i < doneParts && styles.sectionMiniSegDone]} />
+                  ))}
+                </View>
+                <Text
+                  style={[styles.sectionMiniCount, status === 'ACTIVE' && styles.sectionMiniCountActive]}
+                  maxFontSizeMultiplier={1.2}
+                >
+                  {doneParts}/{SECTION_COUNT}
+                </Text>
+              </View>
+            )}
+            {showSections && status === 'ACTIVE' && (
+              <View style={styles.partLabels}>
+                {LESSON_SECTIONS.map((sec, i) => (
+                  <Text
+                    key={sec.name}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.7}
+                    maxFontSizeMultiplier={1.2}
+                    style={[
+                      styles.partLabel,
+                      i < doneParts && styles.partLabelDone,
+                      i === doneParts && styles.partLabelNext,
+                    ]}
+                  >
+                    {sec.name}
+                  </Text>
+                ))}
+                <Text style={styles.partLabelSpacer} maxFontSizeMultiplier={1.2}>
+                  {doneParts}/{SECTION_COUNT}
+                </Text>
+              </View>
             )}
           </View>
           {!isProgressLocked && (
@@ -322,6 +367,18 @@ const styles = StyleSheet.create({
   lessonDescriptionLocked: {
     color: '#7D7D7D',
   },
+  sectionMini: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 10 },
+  sectionMiniBar: { flex: 1, flexDirection: 'row', gap: 4 },
+  sectionMiniSeg: { flex: 1, height: 5, borderRadius: 3, backgroundColor: palette.border },
+  sectionMiniSegDone: { backgroundColor: palette.accent },
+  sectionMiniCount: { fontSize: 12, color: palette.muted, fontWeight: '600' },
+  sectionMiniCountActive: { color: palette.accent, fontWeight: '700' },
+  partLabels: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 },
+  partLabel: { flex: 1, minWidth: 0, fontSize: 11, fontWeight: '700', textAlign: 'center', color: '#5E6363' },
+  partLabelDone: { color: '#A3A8A8' },
+  partLabelNext: { color: palette.accent },
+  // Etiketlerin çubuk parçalarıyla hizalanması için sağdaki "n/4" kadar boşluk (görünmez)
+  partLabelSpacer: { fontSize: 12, fontWeight: '700', opacity: 0, marginLeft: 6 },
   arrowContainer: {
     width: 24,
     height: 24,
