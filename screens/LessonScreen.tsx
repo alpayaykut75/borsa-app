@@ -1728,32 +1728,61 @@ export default function LessonScreen({ route, navigation }: Props) {
     );
   };
 
-  /** 4 parçalı ilerleme çubuğu + bölüm adları. activeFill: aktif bölümün dolu oranı (0–1). */
+  /** Bölümün ilk adımına git (yalnızca bitmiş ya da içinde olunan bölümlere). */
+  const jumpToSection = (section: number) => {
+    const target = steps.findIndex((st) => stepSection(st) === section);
+    if (target < 0) return;
+    setSectionDoneScreen(null);
+    sectionStartedAt.current = Date.now();
+    setCurrentIndex(target);
+    setQuizState({});
+    setFinalQuizState({
+      hasStarted: false,
+      currentQuestionIndex: 0,
+      selectedAnswers: {},
+      isSubmitted: false,
+      score: 0,
+    });
+  };
+
+  /**
+   * 4 parçalı ilerleme çubuğu + bölüm adları. activeFill: aktif bölümün dolu oranı (0–1).
+   * Bitmiş ya da aktif bölüme dokununca o bölümün başına gidilir.
+   */
   const renderSectionBar = (active: number, activeFill: number) => (
-    <View style={styles.sectionBarWrap}>
-      <View style={styles.sectionBarRow}>
-        {LESSON_SECTIONS.map((sec, i) => {
-          const fill = i < active ? 1 : i > active ? 0 : Math.max(0.04, Math.min(1, activeFill));
-          return (
-            <View key={sec.name} style={styles.sectionSeg}>
+    <View style={[styles.sectionBarWrap, styles.sectionBarRow]}>
+      {LESSON_SECTIONS.map((sec, i) => {
+        const fill = i < active ? 1 : i > active ? 0 : Math.max(0.04, Math.min(1, activeFill));
+        const reachable = i <= Math.min(active, SECTION_COUNT - 1);
+        return (
+          <TouchableOpacity
+            key={sec.name}
+            style={styles.sectionCol}
+            onPress={() => jumpToSection(i)}
+            disabled={!reachable}
+            activeOpacity={0.6}
+            hitSlop={{ top: 10, bottom: 10 }}
+            accessibilityRole="button"
+            accessibilityLabel={`${sec.longName} bölümünün başına git`}
+          >
+            <View style={styles.sectionSeg}>
               <View style={[styles.sectionSegFill, { width: `${fill * 100}%` }]} />
             </View>
-          );
-        })}
-      </View>
-      <View style={styles.sectionBarRow}>
-        {LESSON_SECTIONS.map((sec, i) => (
-          <Text
-            key={sec.name}
-            style={[
-              styles.sectionLabel,
-              i === active ? styles.sectionLabelActive : i < active ? styles.sectionLabelDone : null,
-            ]}
-          >
-            {sec.name}
-          </Text>
-        ))}
-      </View>
+            <Text
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.7}
+              maxFontSizeMultiplier={1.2}
+              style={[
+                styles.sectionLabel,
+                i === active ? styles.sectionLabelActive : i < active ? styles.sectionLabelDone : null,
+              ]}
+            >
+              {sec.name}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
     </View>
   );
 
@@ -2015,10 +2044,10 @@ const styles = StyleSheet.create({
   },
   sectionBarWrap: { marginBottom: 16 },
   sectionBarRow: { flexDirection: 'row', gap: 6 },
-  sectionSeg: { flex: 1, height: 6, borderRadius: 3, backgroundColor: '#1C1F1F', overflow: 'hidden' },
+  sectionCol: { flex: 1, minWidth: 0 },
+  sectionSeg: { height: 6, borderRadius: 3, backgroundColor: '#1C1F1F', overflow: 'hidden' },
   sectionSegFill: { height: 6, borderRadius: 3, backgroundColor: palette.accent },
   sectionLabel: {
-    flex: 1,
     marginTop: 6,
     fontSize: 11,
     fontWeight: '700',

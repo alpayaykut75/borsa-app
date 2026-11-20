@@ -170,7 +170,10 @@ export default function LessonPathItem({
                     <View key={sec.name} style={[styles.sectionMiniSeg, i < doneParts && styles.sectionMiniSegDone]} />
                   ))}
                 </View>
-                <Text style={[styles.sectionMiniCount, status === 'ACTIVE' && styles.sectionMiniCountActive]}>
+                <Text
+                  style={[styles.sectionMiniCount, status === 'ACTIVE' && styles.sectionMiniCountActive]}
+                  maxFontSizeMultiplier={1.2}
+                >
                   {doneParts}/{SECTION_COUNT}
                 </Text>
               </View>
@@ -180,6 +183,10 @@ export default function LessonPathItem({
                 {LESSON_SECTIONS.map((sec, i) => (
                   <Text
                     key={sec.name}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.7}
+                    maxFontSizeMultiplier={1.2}
                     style={[
                       styles.partLabel,
                       i < doneParts && styles.partLabelDone,
@@ -189,7 +196,9 @@ export default function LessonPathItem({
                     {sec.name}
                   </Text>
                 ))}
-                <Text style={styles.partLabelSpacer}>{doneParts}/{SECTION_COUNT}</Text>
+                <Text style={styles.partLabelSpacer} maxFontSizeMultiplier={1.2}>
+                  {doneParts}/{SECTION_COUNT}
+                </Text>
               </View>
             )}
           </View>
@@ -365,7 +374,7 @@ const styles = StyleSheet.create({
   sectionMiniCount: { fontSize: 12, color: palette.muted, fontWeight: '600' },
   sectionMiniCountActive: { color: palette.accent, fontWeight: '700' },
   partLabels: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 },
-  partLabel: { flex: 1, fontSize: 11, fontWeight: '700', textAlign: 'center', color: '#5E6363' },
+  partLabel: { flex: 1, minWidth: 0, fontSize: 11, fontWeight: '700', textAlign: 'center', color: '#5E6363' },
   partLabelDone: { color: '#A3A8A8' },
   partLabelNext: { color: palette.accent },
   // Etiketlerin çubuk parçalarıyla hizalanması için sağdaki "n/4" kadar boşluk (görünmez)
